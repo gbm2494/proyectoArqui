@@ -1,0 +1,9 @@
+C:\Users\B31003\Desktop\proyectoArqui\proyectoArqui\bin\Debug\proyectoArqui.exe.config
+C:\Users\B31003\Desktop\proyectoArqui\proyectoArqui\bin\Debug\proyectoArqui.exe
+C:\Users\B31003\Desktop\proyectoArqui\proyectoArqui\bin\Debug\proyectoArqui.pdb
+C:\Users\B31003\Desktop\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.csprojResolveAssemblyReference.cache
+C:\Users\B31003\Desktop\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.Form1.resources
+C:\Users\B31003\Desktop\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.Properties.Resources.resources
+C:\Users\B31003\Desktop\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.csproj.GenerateResource.Cache
+C:\Users\B31003\Desktop\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.exe
+C:\Users\B31003\Desktop\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.pdb
