@@ -7,3 +7,6 @@ C:\Users\B31003\Desktop\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.Prop
 C:\Users\B31003\Desktop\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.csproj.GenerateResource.Cache
 C:\Users\B31003\Desktop\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.exe
 C:\Users\B31003\Desktop\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.pdb
+C:\Users\b30675\Documents\GitHub\proyectoArqui\proyectoArqui\proyectoArqui\bin\Debug\proyectoArqui.exe.config
+C:\Users\b30675\Documents\GitHub\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.exe
+C:\Users\b30675\Documents\GitHub\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.pdb

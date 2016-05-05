@@ -39,7 +39,16 @@ namespace proyectoArqui
         public Procesador()
         {
             /*Operaciones de los hilos asociados en el diccionario*/
-            operaciones.Add(5, "DADDI");
+            operaciones.Add(8, "DADDI");
+            operaciones.Add(32, "DADD");
+            operaciones.Add(34, "DSUB");
+            operaciones.Add(12, "DMUL");
+            operaciones.Add(14, "DDIV");
+            operaciones.Add(4, "BEQZ");
+            operaciones.Add(5, "BNEZ");
+            operaciones.Add(3, "JAL");
+            operaciones.Add(2, "JR");
+            operaciones.Add(63, "FIN");
             inicializarEstructuras();
         }
 
