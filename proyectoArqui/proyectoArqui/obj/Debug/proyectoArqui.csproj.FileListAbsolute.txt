@@ -10,3 +10,6 @@ C:\Users\B31003\Desktop\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.pdb
 C:\Users\b30675\Documents\GitHub\proyectoArqui\proyectoArqui\proyectoArqui\bin\Debug\proyectoArqui.exe.config
 C:\Users\b30675\Documents\GitHub\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.exe
 C:\Users\b30675\Documents\GitHub\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.pdb
+C:\Users\b30675\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\bin\Debug\proyectoArqui.exe.config
+C:\Users\b30675\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.exe
+C:\Users\b30675\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.pdb

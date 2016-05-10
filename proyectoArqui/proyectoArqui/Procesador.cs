@@ -185,10 +185,8 @@ namespace proyectoArqui
             }
         }
 
-        /*Método para ejecutar instrucciones por parte del procesador
-         * 
-         */
-        public void ejecutarSimulacion() 
+        /*Método para ejecutar instrucciones por parte del procesador */
+        public void ejecutarInstrucciones() 
         { 
             
             int contadorInstrucciones = 0;
@@ -228,9 +226,15 @@ namespace proyectoArqui
                     
                 }
 
-            }
-
-            
+            }           
         }
+
+        /*Método para iniciar el proceso de simulación */
+        public void ejecutarSimulacion()
+        {
+ 
+        }
+
+
     }
 }
