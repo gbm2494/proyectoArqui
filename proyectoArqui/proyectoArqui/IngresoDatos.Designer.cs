@@ -29,11 +29,11 @@
         private void InitializeComponent()
         {
             this.label1 = new System.Windows.Forms.Label();
-            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.txtHilos = new System.Windows.Forms.TextBox();
             this.button1 = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
-            this.textBox2 = new System.Windows.Forms.TextBox();
+            this.txtQuantum = new System.Windows.Forms.TextBox();
             this.button2 = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
@@ -47,14 +47,14 @@
             this.label1.TabIndex = 0;
             this.label1.Text = "Número de hilos:";
             // 
-            // textBox1
+            // txtHilos
             // 
-            this.textBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox1.Location = new System.Drawing.Point(190, 37);
-            this.textBox1.MaxLength = 3;
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(88, 22);
-            this.textBox1.TabIndex = 1;
+            this.txtHilos.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtHilos.Location = new System.Drawing.Point(190, 37);
+            this.txtHilos.MaxLength = 3;
+            this.txtHilos.Name = "txtHilos";
+            this.txtHilos.Size = new System.Drawing.Size(88, 22);
+            this.txtHilos.TabIndex = 1;
             // 
             // button1
             // 
@@ -87,14 +87,14 @@
             this.label3.TabIndex = 4;
             this.label3.Text = "Valor del quantum:";
             // 
-            // textBox2
+            // txtQuantum
             // 
-            this.textBox2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox2.Location = new System.Drawing.Point(190, 118);
-            this.textBox2.MaxLength = 3;
-            this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(88, 22);
-            this.textBox2.TabIndex = 5;
+            this.txtQuantum.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtQuantum.Location = new System.Drawing.Point(190, 118);
+            this.txtQuantum.MaxLength = 3;
+            this.txtQuantum.Name = "txtQuantum";
+            this.txtQuantum.Size = new System.Drawing.Size(88, 22);
+            this.txtQuantum.TabIndex = 5;
             // 
             // button2
             // 
@@ -113,11 +113,11 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(322, 246);
             this.Controls.Add(this.button2);
-            this.Controls.Add(this.textBox2);
+            this.Controls.Add(this.txtQuantum);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.button1);
-            this.Controls.Add(this.textBox1);
+            this.Controls.Add(this.txtHilos);
             this.Controls.Add(this.label1);
             this.Name = "IngresoDatos";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
@@ -130,11 +130,11 @@
         #endregion
 
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.TextBox txtHilos;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.TextBox textBox2;
+        private System.Windows.Forms.TextBox txtQuantum;
         private System.Windows.Forms.Button button2;
     }
 }

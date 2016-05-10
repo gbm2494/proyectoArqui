@@ -13,3 +13,12 @@ C:\Users\b30675\Documents\GitHub\proyectoArqui\proyectoArqui\proyectoArqui\obj\D
 C:\Users\b30675\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\bin\Debug\proyectoArqui.exe.config
 C:\Users\b30675\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.exe
 C:\Users\b30675\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.pdb
+C:\Users\gblanco\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\bin\Debug\proyectoArqui.exe.config
+C:\Users\gblanco\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.exe
+C:\Users\gblanco\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.pdb
+C:\Users\gblanco\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\bin\Debug\proyectoArqui.exe
+C:\Users\gblanco\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\bin\Debug\proyectoArqui.pdb
+C:\Users\gblanco\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.csprojResolveAssemblyReference.cache
+C:\Users\gblanco\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.IngresoDatos.resources
+C:\Users\gblanco\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.Properties.Resources.resources
+C:\Users\gblanco\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.csproj.GenerateResource.Cache

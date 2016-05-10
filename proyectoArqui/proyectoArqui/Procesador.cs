@@ -24,7 +24,8 @@ namespace proyectoArqui
 	    int[,] cache = new int[filasCache,columnasCache];
 
         //contiene los 32 registros del procesador
-	    int[] registros = new int[32];
+        public const int cantidadRegistros = 32;
+	    int[] registros = new int[cantidadRegistros];
 
         //Contiene el PC y los registros de cada hilo, primero los 32 registros y por último el PC
         public const int filasContexto = 4;
@@ -41,7 +42,8 @@ namespace proyectoArqui
 	    int[] ubicacion = new int[3];
 
         //Memoria principal del procesador, comienza en 128
-        int[] memoria = new int[256];
+        public const int cantidadMemoria = 256;
+        int[] memoria = new int[cantidadMemoria];
 
         //Se almacena el numero de fila del contexto ejecutándose actualmente
         int filaContextoActual = 0;
@@ -69,19 +71,45 @@ namespace proyectoArqui
             //Se inicializa con ceros la cache
             for (int contadorFilas = 0; contadorFilas < filasCache; ++contadorFilas)
             {
-                for (int contadorColumnas = 0; contadorColumnas < columnasCache; ++contadorColumnas )
-                {
-                    cache[contadorFilas, contadorColumnas ] = 0;
-                }
+                
+                    for (int contadorColumnas = 0; contadorColumnas < columnasCache; ++contadorColumnas)
+                    {
+                        if (contadorFilas != filasCache - 1)
+                        {
+                            cache[contadorFilas, contadorColumnas] = 0;
+                        }
+
+                        else
+                        {
+                            cache[contadorFilas, contadorColumnas] = -1;
+                        }
+                    }
+                
+                
             }
 
+            
+
             //Se inicializa con ceros la memoria
-            for (int i = 0; i < memoria.Length; ++i )
+            for (int i = 0; i < cantidadMemoria; ++i )
             {
                 memoria[i] = 0;
             }
 
-            //
+            //se inicializa con ceros los registros
+            for (int i = 0; i < cantidadRegistros; i++)
+            {
+                registros[i] = 0;
+            }
+
+            //se inicializa con ceros el contexto
+            for (int i = 0; i < filasContexto; i++)
+            {
+                for (int j = 0; j < columnasContexto; j++)
+                {
+                    contexto[i, j] = 0;
+                }
+            }
         }
 
         /*Método para leer una instrucción en la cache*/
@@ -229,11 +257,7 @@ namespace proyectoArqui
             }           
         }
 
-        /*Método para iniciar el proceso de simulación */
-        public void ejecutarSimulacion()
-        {
- 
-        }
+       
 
 
     }
