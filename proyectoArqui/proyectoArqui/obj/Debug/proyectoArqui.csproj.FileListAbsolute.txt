@@ -22,3 +22,6 @@ C:\Users\gblanco\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\pro
 C:\Users\gblanco\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.IngresoDatos.resources
 C:\Users\gblanco\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.Properties.Resources.resources
 C:\Users\gblanco\Desktop\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.csproj.GenerateResource.Cache
+C:\Users\Lari\Desktop\Arqui\proyectoArqui\proyectoArqui\proyectoArqui\bin\Debug\proyectoArqui.exe.config
+C:\Users\Lari\Desktop\Arqui\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.exe
+C:\Users\Lari\Desktop\Arqui\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.pdb
