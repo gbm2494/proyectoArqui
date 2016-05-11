@@ -30,9 +30,9 @@ namespace proyectoArqui
             }
 
             //Creación de las 3 instancias de la clase procesador
-            Procesador procesador1 = new Procesador();
-            Procesador procesador2 = new Procesador();
-            Procesador procesador3 = new Procesador();
+            Procesador procesador1 = new Procesador(hilos);
+            Procesador procesador2 = new Procesador(hilos);
+            Procesador procesador3 = new Procesador(hilos);
 
             //Creación de los 3 hilos, uno para cada procesador
             Thread hiloProcesador1 = new Thread(new ThreadStart(procesador1.ejecutarInstrucciones));
@@ -44,48 +44,48 @@ namespace proyectoArqui
              * SE APUNTA AL PRIMER CAMPO DE CADA MEMORIA) */
 
             /*Se ejecutan los hilos que simulan los procesador */
-       /*     hiloProcesador1.Start();
-            hiloProcesador2.Start();
-            hiloProcesador3.Start(); */
+       /*    hiloProcesador1.Start();
+             hiloProcesador2.Start();
+             hiloProcesador3.Start(); */
 
             /* Ciclo que se ejecuta mientras hayan hilos de procesadores activos */
      /*       while (hiloProcesador1.IsAlive || hiloProcesador2.IsAlive || hiloProcesador3.IsAlive)
-            {
+              {
                 /* El hilo principal alcanza la barrera de fin de instrucción. Una vez que los otros 3 hilos la alcancen se aumentará
-                el reloj en cada procesador siempre y cuando éste se encuentre activo. */
-     /*           proyectoArqui.Procesador.barreraFinInstr.SignalAndWait();
+                   el reloj en cada procesador siempre y cuando éste se encuentre activo. */
+     /*            proyectoArqui.Procesador.barreraFinInstr.SignalAndWait();
 
-                if (!procesador1.getEjecucion())
-                {
-                    Debug.WriteLine("entre al proc 1 \n");
-                    Console.Write("entre al proc 1 \n");
-                    procesador1.aumentarReloj();
+                    if (!procesador1.getEjecucion())
+                    {
+                        Debug.WriteLine("entre al proc 1 \n");
+                        Console.Write("entre al proc 1 \n");
+                        procesador1.aumentarReloj_Ciclos();
+                    }
+
+                    if (!procesador2.getEjecucion())
+                    {
+                        Debug.WriteLine("entre al proc 2 \n");
+                        Console.Write("entre al proc 1 \n");
+                        procesador2.aumentarReloj_Ciclos();
+                    }
+
+                    if (!procesador3.getEjecucion())
+                    {
+                        Debug.WriteLine("entre al proc 3 \n");
+                        Console.Write("entre al proc 3 \n");
+                        procesador3.aumentarReloj_Ciclos();
+                    }
+
+                    /* El hilo principal alcanza la barrera de fin cambio de reloj, donde se les indica a los otros hilos que pueden continuar
+                    con la lectura de la próxima instrucción */
+            /*      proyectoArqui.Procesador.barreraCambioReloj_Ciclo.SignalAndWait();
+
                 }
-
-                if (!procesador2.getEjecucion())
-                {
-                    Debug.WriteLine("entre al proc 2 \n");
-                    Console.Write("entre al proc 1 \n");
-                    procesador2.aumentarReloj();
-                }
-
-                if (!procesador3.getEjecucion())
-                {
-                    Debug.WriteLine("entre al proc 3 \n");
-                    Console.Write("entre al proc 3 \n");
-                    procesador3.aumentarReloj();
-                }
-
-                /* El hilo principal alcanza la barrera de fin cambio de reloj, donde se les indica a los otros hilos que pueden continuar
-                 con la lectura de la próxima instrucción */
-      /*          proyectoArqui.Procesador.barreraCambioReloj.SignalAndWait();
-
-            }
 
         
-       /*   hiloProcesador1.Join();
-            hiloProcesador2.Join();
-            hiloProcesador3.Join(); */
+             /*   hiloProcesador1.Join();
+                  hiloProcesador2.Join();
+                  hiloProcesador3.Join(); */
 
             /* El hilo principal muestra los resultados finales de cada procesador */
 
