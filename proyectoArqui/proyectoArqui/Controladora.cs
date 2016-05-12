@@ -102,21 +102,21 @@ namespace proyectoArqui
                  //El archivo es del primer procesador
                  if (i < cantidadHilos[0])
                  {
-                     procesador1.setNumHilo_Procesador(hiloActual[0], i, 1);
+                     procesador1.setNumHilo_Procesador(hiloActual[0], i+1, 1);
                      procesador1.contexto[hiloActual[0], 32] = posicionMemoria[0] + 128;
                      hiloActual[0]++;
                  }
                  //El archivo es del segundo procesador
                  else if (i < cantidadHilos[0] + cantidadHilos[1])
                  {
-                     procesador2.setNumHilo_Procesador(hiloActual[1], i, 2);
+                     procesador2.setNumHilo_Procesador(hiloActual[1], i + 1, 2);
                      procesador2.contexto[hiloActual[1], 32] = posicionMemoria[1] + 128;
                      hiloActual[1]++;
                  }
                  //El archivo es del tercer procesador
                  else
                  {
-                     procesador3.setNumHilo_Procesador(hiloActual[2], i, 3);
+                     procesador3.setNumHilo_Procesador(hiloActual[2], i + 1, 3);
                      procesador3.contexto[hiloActual[2], 32] = posicionMemoria[2] + 128;
                      hiloActual[2]++;
                  }
@@ -224,6 +224,23 @@ namespace proyectoArqui
             //También se debe ir llenando el contexto de cada procesador, en la seccion de
             //registros se ponen ceros, en la sección del PC se pone la ubicacion en memoria
             //donde se almacenó este número.
+        }
+
+        /**/
+        public string getNombreHilos(int idProcesador)
+        {
+            if (idProcesador == 0)
+            {
+                return procesador1.getNombreHilos();
+            }
+            else if (idProcesador == 1)
+            {
+                return procesador2.getNombreHilos();
+            }
+            else 
+            {
+                return procesador3.getNombreHilos();
+            }
         }
     }
 }

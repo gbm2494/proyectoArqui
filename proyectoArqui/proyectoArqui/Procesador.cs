@@ -81,6 +81,18 @@ namespace proyectoArqui
              }
         }
 
+        public string getNombreHilos()
+        {
+            string retorno = "";
+
+            for (int i = 0; i < filasDatosHilos; i++)
+            {
+                retorno = retorno + " " + datosHilos[i, 0];
+            }
+
+            return retorno;
+        }
+
         /*Constructor de la clase procesador*/
         public Procesador(int numHilos)
         {

@@ -17,6 +17,9 @@ namespace proyectoArqui
         string rutaHilos;
         int cantidadHilos;
         int valorQuantum;
+        Controladora controlador;
+        /*Constante del total de procesadores de la simulación*/
+        public const int totalProcesadores = 3;
 
         public Resultados(string rutaArchivo, int numHilos, int quantum)
         {
@@ -38,8 +41,9 @@ namespace proyectoArqui
                      y que estos sean menos que 12 que es el máximo contexto que tienen los procesadores*/
                     if (archivos.Length == cantidadHilos && cantidadHilos <= 12)
                     {
-                        Controladora controlador = new Controladora(rutaHilos, cantidadHilos, valorQuantum);
+                        controlador = new Controladora(rutaHilos, cantidadHilos, valorQuantum);
                         controlador.ejecutarSimulacion();
+                        llenarInterfaz();
                     }
                     else if (cantidadHilos > 12)
                     {
@@ -63,6 +67,32 @@ namespace proyectoArqui
                 this.Close();
             }
             
+        }
+
+        /**/
+        public void llenarInterfaz() 
+        {
+            string[] nombres;
+
+            for (int i = 0; i < totalProcesadores; i++)
+            {
+                nombres[i] = controlador.getNombreHilos(i);
+            }
+           
+            string[] nombresDivididosP1 = nombres[0].Split(' ');
+            string[] nombresDivididosP2 = nombres[1].Split(' ');
+            string[] nombresDivididosP3 = nombres[2].Split(' ');
+
+            //for (int i = 0; i < nombresDivididos.Length; i++)
+            //{
+            //    if (!nombresDivididos[i].Equals(""))
+            //    {
+            //        cmbHilosP1.Items.Add(nombresDivididos[i]);
+            //    }
+            //}
+            
+            //controlador.getNombreHilos(1);
+            //controlador.getNombreHilos(2);
         }
 
     }
