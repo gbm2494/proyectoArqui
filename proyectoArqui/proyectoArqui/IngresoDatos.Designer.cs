@@ -51,10 +51,11 @@
             // 
             this.txtHilos.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtHilos.Location = new System.Drawing.Point(190, 37);
-            this.txtHilos.MaxLength = 3;
+            this.txtHilos.MaxLength = 2;
             this.txtHilos.Name = "txtHilos";
             this.txtHilos.Size = new System.Drawing.Size(88, 22);
             this.txtHilos.TabIndex = 1;
+            this.txtHilos.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.txtHilos_KeyPress);
             // 
             // button1
             // 
@@ -91,10 +92,11 @@
             // 
             this.txtQuantum.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtQuantum.Location = new System.Drawing.Point(190, 118);
-            this.txtQuantum.MaxLength = 3;
+            this.txtQuantum.MaxLength = 2;
             this.txtQuantum.Name = "txtQuantum";
             this.txtQuantum.Size = new System.Drawing.Size(88, 22);
             this.txtQuantum.TabIndex = 5;
+            this.txtQuantum.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.txtQuantum_KeyPress);
             // 
             // button2
             // 

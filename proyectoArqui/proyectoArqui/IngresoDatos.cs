@@ -33,16 +33,38 @@ namespace proyectoArqui
         //Botón que inicia la accion de ejecutar la simulación
         private void button2_Click(object sender, EventArgs e)
         {
-            
             if (rutaHilos != null && !txtHilos.Text.ToString().Equals("") && !txtQuantum.Text.ToString().Equals(""))
             {
-                Controladora controlador = new Controladora();
-                controlador.ejecutarSimulacion(rutaHilos, Convert.ToInt32(txtHilos.Text), Convert.ToInt32(txtQuantum.Text));
+                Resultados resultados = new Resultados(rutaHilos, Convert.ToInt32(txtHilos.Text), Convert.ToInt32(txtQuantum.Text));
+                resultados.Show();
+                this.Hide();
+            }
+            else if (rutaHilos == null)
+            {
+                MessageBox.Show("Para iniciar la simulación debe elegir una ruta de archivos", "Error de archivos", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            else 
+            {
+                MessageBox.Show("Debe ingresar todos los datos necesarios para simulación", "Error de archivos", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
             }
 
+        }
 
+        private void txtHilos_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true;
+            }
+        }
 
-
+        private void txtQuantum_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true;
+            }
         }
 
     }

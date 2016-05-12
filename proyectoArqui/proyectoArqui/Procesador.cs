@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Diagnostics;
 
 namespace proyectoArqui
 {
@@ -11,13 +12,13 @@ namespace proyectoArqui
     class Procesador
     {
         //variable para almacenar el quantum
-        int quantum;
+        public int quantum = 0;
 
         //variable para almacenar cuantos hilos tiene activos ese procesador
         int hilosActivos = 0;
 
         //program counter del procesador
-        int PC;
+        int PC = 128;
 
         //cache del procesador, 4 palabras + el bloque, y 4x4 bloques
         public const int filasCache = 5;
@@ -31,7 +32,7 @@ namespace proyectoArqui
         //Contiene el PC y los registros de cada hilo, primero los 32 registros y por último el PC
         readonly int filasContexto;
         public const int columnasContexto = 33;
-        int[,] contexto; 
+        public int[,] contexto; 
 
         //Variable para manejar el reloj del procesador
         int reloj = 0;
@@ -44,7 +45,7 @@ namespace proyectoArqui
 
         //Memoria principal del procesador, comienza en 128
         public const int cantidadMemoria = 256;
-        int[] memoria = new int[cantidadMemoria];
+        public int[] memoria = new int[cantidadMemoria];
 
         //Se almacena el número de fila del contexto ejecutándose actualmente
         int filaContextoActual = 0;
@@ -66,6 +67,19 @@ namespace proyectoArqui
         readonly int filasDatosHilos;
         public const int columnasDatosHilos = 5;
         int[,] datosHilos;
+
+        public void imprimirMemoria() {
+            for (int i = 0; i < cantidadMemoria; i++)
+                Debug.WriteLine(memoria[i]);
+        }
+
+        public void imprimirContexto()
+        {
+             for(int i = 0; i < filasContexto; i++)
+             {
+                 Debug.WriteLine(contexto[i,32]);
+             }
+        }
 
         /*Constructor de la clase procesador*/
         public Procesador(int numHilos)
@@ -91,6 +105,7 @@ namespace proyectoArqui
             inicializarEstructuras();
         }
 
+       
         public void inicializarEstructuras()
         {
 
