@@ -86,7 +86,7 @@ namespace proyectoArqui
             int[] posicionMemoria = new int[totalProcesadores];
             int[] hiloActual = new int[totalProcesadores];
 
-            //Se inicializa el contador en cero
+            //Se inicializa el contador en cero de la posición en memoria de cada procesador así como el id del hilo actual 
             for (int i = 0; i < totalProcesadores; i++)
             {
                 posicionMemoria[i] = 0;
@@ -101,21 +101,27 @@ namespace proyectoArqui
                  //El archivo es del primer procesador
                  if (i < cantidadHilos[0])
                  {
+                     //Se llenan los datos del hilo en el procesador
                      procesador1.setNumHilo_Procesador(hiloActual[0], i+1, 1);
+                     //Se llenan el PC del contexto del hilo
                      procesador1.contexto[hiloActual[0], 32] = posicionMemoria[0] + 128;
                      hiloActual[0]++;
                  }
                  //El archivo es del segundo procesador
                  else if (i < cantidadHilos[0] + cantidadHilos[1])
                  {
+                     //Se llenan los datos del hilo en el procesador
                      procesador2.setNumHilo_Procesador(hiloActual[1], i + 1, 2);
+                     //Se llenan el PC del contexto del hilo
                      procesador2.contexto[hiloActual[1], 32] = posicionMemoria[1] + 128;
                      hiloActual[1]++;
                  }
                  //El archivo es del tercer procesador
                  else
                  {
+                     //Se llenan los datos del hilo en el procesador
                      procesador3.setNumHilo_Procesador(hiloActual[2], i + 1, 3);
+                     //Se llenan el PC del contexto del hilo
                      procesador3.contexto[hiloActual[2], 32] = posicionMemoria[2] + 128;
                      hiloActual[2]++;
                  }
@@ -123,12 +129,13 @@ namespace proyectoArqui
                  /*Carga de la memoria mediante cada línea del archivo*/
                  foreach (string line in File.ReadLines(@archivos[i], Encoding.UTF8))
                  {
-                     /*Se divide la instrucción en sus 4 códigos*/
+                     /*Se divide la instrucción en sus 4 palabras*/
                      string[] divisionInstruccion = line.Split(' ');
                          
                      //El archivo es del primer procesador
                      if (i < cantidadHilos[0])
                      {
+                         /*Se carga en memoria la instrucción del hilo*/
                          for (int pos = 0; pos < divisionInstruccion.Length; pos++)
                          {
                              procesador1.memoria[posicionMemoria[0]] = Convert.ToInt32(divisionInstruccion[pos]);
@@ -141,6 +148,7 @@ namespace proyectoArqui
                      {
                          for (int pos = 0; pos < divisionInstruccion.Length; pos++)
                          {
+                             /*Se carga en memoria la instrucción del hilo*/
                              procesador2.memoria[posicionMemoria[1]] = Convert.ToInt32(divisionInstruccion[pos]);
                              posicionMemoria[1]++;
                          }
@@ -150,6 +158,7 @@ namespace proyectoArqui
                      {
                          for (int pos = 0; pos < divisionInstruccion.Length; pos++)
                          {
+                             /*Se carga en memoria la instrucción del hilo*/
                              procesador3.memoria[posicionMemoria[2]] = Convert.ToInt32(divisionInstruccion[pos]);
                              posicionMemoria[2]++;
                          }
@@ -205,7 +214,6 @@ namespace proyectoArqui
 
                 }
 
-        
                 hiloProcesador1.Join();
                 hiloProcesador2.Join();
                 hiloProcesador3.Join();
@@ -230,7 +238,7 @@ namespace proyectoArqui
             //donde se almacenó este número.
         }
 
-        /**/
+        /*Método para obtener el nombre de todos los hilos que tengan el procesador con el id recibido por parámetro*/
         public string getNombreHilos(int idProcesador)
         {
             if (idProcesador == 0)
@@ -244,6 +252,74 @@ namespace proyectoArqui
             else 
             {
                 return procesador3.getNombreHilos();
+            }
+        }
+
+        /*Método para obtener el valor de los registros del hilo con idHilo en el procesador con el id recibido por parámetro*/
+        public string getContextoHilo(int idProcesador, int idHilo)
+        {
+            if (idProcesador == 0)
+            {
+                return procesador1.getContextoHilo(idHilo);
+            }
+            else if (idProcesador == 1)
+            {
+                return procesador2.getContextoHilo(idHilo);
+            }
+            else
+            {
+                return procesador3.getContextoHilo(idHilo);
+            }
+        }
+
+        /*Método para obtener el valor de ciclos usados del hilo con idHilo en el procesador con el id recibido por parámetro*/
+        public string getCicloHilo(int idProcesador, int idHilo)
+        {
+            if (idProcesador == 0)
+            {
+                return procesador1.getCicloHilo(idHilo);
+            }
+            else if (idProcesador == 1)
+            {
+                return procesador2.getCicloHilo(idHilo);
+            }
+            else
+            {
+                return procesador3.getCicloHilo(idHilo);
+            }
+        }
+
+        /*Método para obtener el valor del reloj inicial del hilo con idHilo en el procesador con el id recibido por parámetro*/
+        public string getInicialHilo(int idProcesador, int idHilo)
+        {
+            if (idProcesador == 0)
+            {
+                return procesador1.getInicialHilo(idHilo);
+            }
+            else if (idProcesador == 1)
+            {
+                return procesador2.getInicialHilo(idHilo);
+            }
+            else
+            {
+                return procesador3.getInicialHilo(idHilo);
+            }
+        }
+
+        /*Método para obtener el valor del reloj final del hilo con idHilo en el procesador con el id recibido por parámetro*/
+        public string getFinalHilo(int idProcesador, int idHilo)
+        {
+            if (idProcesador == 0)
+            {
+                return procesador1.getFinalHilo(idHilo);
+            }
+            else if (idProcesador == 1)
+            {
+                return procesador2.getFinalHilo(idHilo);
+            }
+            else
+            {
+                return procesador3.getFinalHilo(idHilo);
             }
         }
     }

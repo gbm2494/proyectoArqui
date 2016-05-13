@@ -68,11 +68,13 @@
             // 
             // cmbHilosP1
             // 
+            this.cmbHilosP1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbHilosP1.FormattingEnabled = true;
             this.cmbHilosP1.Location = new System.Drawing.Point(74, 23);
             this.cmbHilosP1.Name = "cmbHilosP1";
             this.cmbHilosP1.Size = new System.Drawing.Size(121, 24);
             this.cmbHilosP1.TabIndex = 5;
+            this.cmbHilosP1.SelectedIndexChanged += new System.EventHandler(this.cmbHilosP1_SelectedIndexChanged);
             // 
             // groupBox1
             // 
@@ -109,39 +111,6 @@
             this.listRegistrosP1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.listRegistrosP1.FormattingEnabled = true;
             this.listRegistrosP1.ItemHeight = 15;
-            this.listRegistrosP1.Items.AddRange(new object[] {
-            "R1",
-            "R2",
-            "R3",
-            "R4",
-            "R5",
-            "R6",
-            "R7",
-            "R8",
-            "R9",
-            "R10",
-            "R11",
-            "R12",
-            "R13",
-            "R14",
-            "R15",
-            "R16",
-            "R17",
-            "R18",
-            "R19",
-            "R20",
-            "R21",
-            "R22",
-            "R23",
-            "R24",
-            "R25",
-            "R26",
-            "R27",
-            "R28",
-            "R29",
-            "R30",
-            "R31",
-            "R32"});
             this.listRegistrosP1.Location = new System.Drawing.Point(21, 164);
             this.listRegistrosP1.Name = "listRegistrosP1";
             this.listRegistrosP1.Size = new System.Drawing.Size(174, 244);
@@ -252,39 +221,6 @@
             this.listRegistrosP2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.listRegistrosP2.FormattingEnabled = true;
             this.listRegistrosP2.ItemHeight = 15;
-            this.listRegistrosP2.Items.AddRange(new object[] {
-            "R1",
-            "R2",
-            "R3",
-            "R4",
-            "R5",
-            "R6",
-            "R7",
-            "R8",
-            "R9",
-            "R10",
-            "R11",
-            "R12",
-            "R13",
-            "R14",
-            "R15",
-            "R16",
-            "R17",
-            "R18",
-            "R19",
-            "R20",
-            "R21",
-            "R22",
-            "R23",
-            "R24",
-            "R25",
-            "R26",
-            "R27",
-            "R28",
-            "R29",
-            "R30",
-            "R31",
-            "R32"});
             this.listRegistrosP2.Location = new System.Drawing.Point(21, 164);
             this.listRegistrosP2.Name = "listRegistrosP2";
             this.listRegistrosP2.Size = new System.Drawing.Size(174, 244);
@@ -362,11 +298,13 @@
             // 
             // cmbHilosP2
             // 
+            this.cmbHilosP2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbHilosP2.FormattingEnabled = true;
             this.cmbHilosP2.Location = new System.Drawing.Point(74, 23);
             this.cmbHilosP2.Name = "cmbHilosP2";
             this.cmbHilosP2.Size = new System.Drawing.Size(121, 24);
             this.cmbHilosP2.TabIndex = 5;
+            this.cmbHilosP2.SelectedIndexChanged += new System.EventHandler(this.cmbHilosP2_SelectedIndexChanged);
             // 
             // groupBox3
             // 
@@ -403,39 +341,6 @@
             this.listRegistrosP3.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.listRegistrosP3.FormattingEnabled = true;
             this.listRegistrosP3.ItemHeight = 15;
-            this.listRegistrosP3.Items.AddRange(new object[] {
-            "R1",
-            "R2",
-            "R3",
-            "R4",
-            "R5",
-            "R6",
-            "R7",
-            "R8",
-            "R9",
-            "R10",
-            "R11",
-            "R12",
-            "R13",
-            "R14",
-            "R15",
-            "R16",
-            "R17",
-            "R18",
-            "R19",
-            "R20",
-            "R21",
-            "R22",
-            "R23",
-            "R24",
-            "R25",
-            "R26",
-            "R27",
-            "R28",
-            "R29",
-            "R30",
-            "R31",
-            "R32"});
             this.listRegistrosP3.Location = new System.Drawing.Point(21, 164);
             this.listRegistrosP3.Name = "listRegistrosP3";
             this.listRegistrosP3.Size = new System.Drawing.Size(174, 244);
@@ -513,11 +418,13 @@
             // 
             // cmbHilosP3
             // 
+            this.cmbHilosP3.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbHilosP3.FormattingEnabled = true;
             this.cmbHilosP3.Location = new System.Drawing.Point(74, 23);
             this.cmbHilosP3.Name = "cmbHilosP3";
             this.cmbHilosP3.Size = new System.Drawing.Size(121, 24);
             this.cmbHilosP3.TabIndex = 5;
+            this.cmbHilosP3.SelectedIndexChanged += new System.EventHandler(this.cmbHilosP3_SelectedIndexChanged);
             // 
             // Resultados
             // 
@@ -527,6 +434,7 @@
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "Resultados";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Resultados";

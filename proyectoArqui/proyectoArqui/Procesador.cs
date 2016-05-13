@@ -71,11 +71,13 @@ namespace proyectoArqui
         public const int columnasDatosHilos = 6;
         public int[,] datosHilos;
 
+        /*Método para pruebas que imprime en el debugger la memoria del procesador*/
         public void imprimirMemoria() {
             for (int i = 0; i < cantidadMemoria; i++)
                 Debug.WriteLine(memoria[i]);
         }
 
+        /*Método para pruebas que imprime en el debugger el contexto del procesador*/
         public void imprimirContexto()
         {
              for(int i = 0; i < filasContexto; i++)
@@ -84,6 +86,7 @@ namespace proyectoArqui
              }
         }
 
+        /*Método para obtener el nombre de los hilos ejecutados en el procesador*/
         public string getNombreHilos()
         {
             string retorno = "";
@@ -92,6 +95,49 @@ namespace proyectoArqui
             {
                 retorno = retorno + " " + datosHilos[i, 0];
             }
+
+            return retorno;
+        }
+
+        /*Método para obtener el contexto del hilo especificado por el parámetro del método*/
+        public string getContextoHilo(int idHilo)
+        {
+            string retorno = ""; 
+
+            for (int i = 0; i < columnasContexto - 1; i++)
+            {
+                retorno = retorno + contexto[idHilo, i] + " ";
+            }
+
+            return retorno;
+        }
+
+        /*Método para obtener la cantidad de ciclos del hilo especificado por el parámetro del método*/
+        public string getCicloHilo(int idHilo)
+        {
+            string retorno = "";
+            
+            retorno = "" +  datosHilos[idHilo, 1];
+            
+            return retorno;
+        }
+
+        /*Método para obtener el reloj inicial del hilo especificado por el parámetro del método*/
+        public string getInicialHilo(int idHilo)
+        {
+            string retorno = "";
+
+            retorno = "" + datosHilos[idHilo, 2];
+
+            return retorno;
+        }
+
+        /*Método para obtener el reloj final del hilo especificado por el parámetro del método*/
+        public string getFinalHilo(int idHilo)
+        {
+            string retorno = "";
+
+            retorno = "" + datosHilos[idHilo, 3];
 
             return retorno;
         }
@@ -123,6 +169,7 @@ namespace proyectoArqui
         }
 
        
+        /*Método para inicializar todas las estructuras utilizadas en valores correctos*/
         public void inicializarEstructuras()
         {
 
@@ -141,12 +188,9 @@ namespace proyectoArqui
                         {
                             cache[contadorFilas, contadorColumnas] = -1;
                         }
-                    }
-                
-                
+                    }  
             }
 
-            
             //Se inicializa con ceros la memoria
             for (int i = 0; i < cantidadMemoria; ++i )
             {
@@ -193,9 +237,6 @@ namespace proyectoArqui
         {
             datosHilos[filaContextoActual, 2] = reloj;
         }
-
-
-
 
         /*Método para leer una instrucción en la cache*/
         public void leerInstruccion()

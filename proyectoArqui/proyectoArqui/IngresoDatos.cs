@@ -21,6 +21,7 @@ namespace proyectoArqui
             InitializeComponent();
         }
 
+        /*Botón para cargar la ruta de hilos*/
         private void button1_Click(object sender, EventArgs e)
         {
             folder.Description = "Seleccione la carpeta donde se ubican los hilos para la simulación:";
@@ -33,24 +34,28 @@ namespace proyectoArqui
         //Botón que inicia la accion de ejecutar la simulación
         private void button2_Click(object sender, EventArgs e)
         {
+            /*Si se proporcionaron los datos correctos y la ruta de archivos continua la simulación*/
             if (rutaHilos != null && !txtHilos.Text.ToString().Equals("") && !txtQuantum.Text.ToString().Equals(""))
             {
                 Resultados resultados = new Resultados(rutaHilos, Convert.ToInt32(txtHilos.Text), Convert.ToInt32(txtQuantum.Text));
                 resultados.Show();
                 this.Hide();
             }
+
+            /*Si no se seleccionó la ruta de la carpeta con los hilos muestra un error*/
             else if (rutaHilos == null)
             {
                 MessageBox.Show("Para iniciar la simulación debe elegir una ruta de archivos", "Error de archivos", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            /*Si no se digitaron todos los datos para la simulación muestra un error*/
             else 
             {
                 MessageBox.Show("Debe ingresar todos los datos necesarios para simulación", "Error de archivos", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
             }
 
         }
 
+        /*Método para validar que solo se introduzcan números en la cantidad de hilos*/
         private void txtHilos_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
@@ -59,6 +64,7 @@ namespace proyectoArqui
             }
         }
 
+        /*Método para validar que solo se introduzcan números en el valor del quantum*/
         private void txtQuantum_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))

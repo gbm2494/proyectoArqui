@@ -121,6 +121,7 @@
             this.Controls.Add(this.button1);
             this.Controls.Add(this.txtHilos);
             this.Controls.Add(this.label1);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "IngresoDatos";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Simulación de procesadores";
