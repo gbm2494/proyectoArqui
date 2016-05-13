@@ -450,14 +450,14 @@ namespace proyectoArqui
             {
                // Debug.WriteLine("eso vale el fila contexto " + filaContextoActual);
               //  Debug.WriteLine("este es el tam de fila contexto: " + filasContexto);
-                while (contadorInstrucciones < quantum && filaContextoActual < filasContexto && ejecucionHilos[filaContextoActual, 1] == 0)
+                while (contadorInstrucciones < quantum  && ejecucionHilos[filaContextoActual, 1] == 0)
                 {
                     contadorInstrucciones++;
                     leerInstruccion();               
                 }
 
-                if(filaContextoActual < filasContexto)
-                {
+            //    if(filaContextoActual < filasContexto)
+             //   {
                     //Se copia en el contexto los registros porque se acabó el quantum
                     for (contadorContexto = 0; contadorContexto < columnasContexto - 1; ++contadorContexto)
                     {
@@ -465,9 +465,9 @@ namespace proyectoArqui
                     }
 
                     /*Se verifica si es la primera vez que se ejecuta el hilo, pues en caso de serlo se debe guardar el valor actual del reloj */
-                    if (datosHilos[filaContextoActual, 5] == 0)
+                    if (ejecucionHilos[filaContextoActual, 0] == 0)
                     {
-                        datosHilos[filaContextoActual, 5] = 1;
+                        ejecucionHilos[filaContextoActual, 0] = 1;
                         datosHilos[filaContextoActual, 2] = reloj;
                     }
 
@@ -534,7 +534,7 @@ namespace proyectoArqui
                         }
                     }
 
-                }
+            //    }
                
 
             }

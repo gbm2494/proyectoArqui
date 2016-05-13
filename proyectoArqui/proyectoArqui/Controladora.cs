@@ -173,9 +173,9 @@ namespace proyectoArqui
              procesador3.setValorInicialReloj();
 
             //Se indica que ya el hilo va a inicar ejecucion
-             procesador1.ejecucionHilos[0, 1] = 1;
-             procesador2.ejecucionHilos[0, 1] = 1;
-             procesador3.ejecucionHilos[0, 1] = 1;
+             procesador1.ejecucionHilos[0, 0] = 1;
+             procesador2.ejecucionHilos[0, 0] = 1;
+             procesador3.ejecucionHilos[0, 0] = 1;
              
              //Se inicia la ejecución de la simulación
              larissa();
