@@ -113,9 +113,6 @@ namespace proyectoArqui
                 retorno = retorno + contexto[idHilo, i] + " ";
             }
 
-            Debug.WriteLine("este es el id del hilo " + idHilo);
-            Debug.WriteLine("este contiene el contexto " + retorno);
-
             return retorno;
         }
 
@@ -307,7 +304,7 @@ namespace proyectoArqui
             string operando;
 
             /* Variable utilizada para conocer el número de fila donde se encuentra la palabra que se desea ejecutar, Ubicacion[1] 
-         posee el número de palabra a ejecutar, pero como se requiere el índice, debo restarle 1  */
+            posee el número de palabra a ejecutar, pero como se requiere el índice, debo restarle 1  */
             int contadorFilas = ubicacion[1];
 
             /* Se obtiene el primer operando de la palabra o instrucción*/
@@ -332,8 +329,6 @@ namespace proyectoArqui
                             registros[cache[contadorFilas, ubicacion[2] * 4 + 3]] = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] * registros[cache[contadorFilas, ubicacion[2] * 4 + 2]];
                             break;
                         case "DDIV":
-                            Debug.WriteLine("esto tiene el primer operando en div: " + registros[cache[contadorFilas, ubicacion[2] * 4 + 1]]);
-                            Debug.WriteLine("esto tiene el segundo operando en div: " + registros[cache[contadorFilas, ubicacion[2] * 4 + 2]]);
                             registros[cache[contadorFilas, ubicacion[2] * 4 + 3]] = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] / registros[cache[contadorFilas, ubicacion[2] * 4 + 2]];
                             break;
                         case "BEQZ":
@@ -372,7 +367,7 @@ namespace proyectoArqui
 
                             /* Se guarda el valor del reloj porque ya se terminó de ejecutar el hilo. Se guarda el valor del reloj aumentado porque
                             en este punto el hilo principal aún no ha aumentado el valor del reloj. */
-                            datosHilos[filaContextoActual, 3] = ++reloj;
+                            datosHilos[filaContextoActual, 3] = reloj+1;
 
                             /* Se indica que un hilo ya no está en ejecucion */
                             ejecucionHilos[filaContextoActual, 1] = 1;
@@ -448,16 +443,13 @@ namespace proyectoArqui
 
             while (hilosActivos > 0)
             {
-               // Debug.WriteLine("eso vale el fila contexto " + filaContextoActual);
-              //  Debug.WriteLine("este es el tam de fila contexto: " + filasContexto);
+
                 while (contadorInstrucciones < quantum  && ejecucionHilos[filaContextoActual, 1] == 0)
                 {
                     contadorInstrucciones++;
                     leerInstruccion();               
                 }
 
-            //    if(filaContextoActual < filasContexto)
-             //   {
                     //Se copia en el contexto los registros porque se acabó el quantum
                     for (contadorContexto = 0; contadorContexto < columnasContexto - 1; ++contadorContexto)
                     {
@@ -535,13 +527,8 @@ namespace proyectoArqui
                         }
                     }
 
-            //    }
-               
-
             }
-
-            Debug.WriteLine("TERMINE EJECUCION");
-
+            
             terminarEjecucion = true;
             barreraFinInstr.RemoveParticipant();
             barreraCambioReloj_Ciclo.RemoveParticipant();

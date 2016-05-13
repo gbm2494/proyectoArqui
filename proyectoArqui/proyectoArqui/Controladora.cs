@@ -166,22 +166,47 @@ namespace proyectoArqui
                  }
             
              }
-
+ 
             //Se inicializa el valor del reloj en cada uno de los primeros hilos a ejecutar de los procesadores
-             procesador1.setValorInicialReloj();
-             procesador2.setValorInicialReloj();
-             procesador3.setValorInicialReloj();
+            //Se verifica que el procesador 1 posea uno o más hilos a ejecutar
+            if(cantidadHilos[0] > 0)
+            {
+                //Se verifica que el procesador 2 posea uno o más hilos a ejecutar
+                if(cantidadHilos[1] > 0)
+                {
+                    //Se verifica que el procesador 3 posea uno o más hilos a ejecutar
+                    if(cantidadHilos[2] > 0)
+                    {
+                        procesador1.setValorInicialReloj();
+                        procesador2.setValorInicialReloj();
+                        procesador3.setValorInicialReloj();
 
-            //Se indica que ya el hilo va a inicar ejecucion
-             procesador1.ejecucionHilos[0, 0] = 1;
-             procesador2.ejecucionHilos[0, 0] = 1;
-             procesador3.ejecucionHilos[0, 0] = 1;
+                        //Se indica que ya el hilo va a inicar ejecucion
+                        procesador1.ejecucionHilos[0, 0] = 1;
+                        procesador2.ejecucionHilos[0, 0] = 1;
+                        procesador3.ejecucionHilos[0, 0] = 1;
+                    }
+
+
+                    procesador1.setValorInicialReloj();
+                    procesador2.setValorInicialReloj();
+
+                    //Se indica que ya el hilo va a inicar ejecucion
+                    procesador1.ejecucionHilos[0, 0] = 1;
+                    procesador2.ejecucionHilos[0, 0] = 1;
+                }
+
+                procesador1.setValorInicialReloj();
+                //Se indica que ya el hilo va a inicar ejecucion
+                procesador1.ejecucionHilos[0, 0] = 1;
+
+            }
              
              //Se inicia la ejecución de la simulación
-             larissa();
+             iniciarSimulacion();
         }
 
-        public void larissa()
+        public void iniciarSimulacion()
         {
             //Creación de los 3 hilos, uno para cada procesador
             Thread hiloProcesador1 = new Thread(new ThreadStart(procesador1.ejecutarInstrucciones));
@@ -225,25 +250,6 @@ namespace proyectoArqui
                 hiloProcesador1.Join();
                 hiloProcesador2.Join();
                 hiloProcesador3.Join();
-
-                Debug.WriteLine("LLEGUE AL FINAAAAAAL");
-                
-                for(int i = 0; i < procesador1.filasContexto; ++i)
-                {
-                    for(int j = 0; j < procesador1.columnasContexto; ++j)
-                    {
-                        Debug.WriteLine("Esto tiene el contextoooo" + procesador1.contexto[i, j]);
-                    }
-                }
-
-            /* El hilo principal muestra los resultados finales de cada procesador */
-
-
-
-            //Se debe meter en cada memoria del procesador lo que contienen los archivos
-            //También se debe ir llenando el contexto de cada procesador, en la seccion de
-            //registros se ponen ceros, en la sección del PC se pone la ubicacion en memoria
-            //donde se almacenó este número.
         }
 
         /*Método para obtener el nombre de todos los hilos que tengan el procesador con el id recibido por parámetro*/
