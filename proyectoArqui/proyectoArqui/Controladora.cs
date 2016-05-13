@@ -167,7 +167,18 @@ namespace proyectoArqui
             
              }
 
-            // larissa();
+            //Se inicializa el valor del reloj en cada uno de los primeros hilos a ejecutar de los procesadores
+             procesador1.setValorInicialReloj();
+             procesador2.setValorInicialReloj();
+             procesador3.setValorInicialReloj();
+
+            //Se indica que ya el hilo va a inicar ejecucion
+             procesador1.ejecucionHilos[0, 1] = 1;
+             procesador2.ejecucionHilos[0, 1] = 1;
+             procesador3.ejecucionHilos[0, 1] = 1;
+             
+             //Se inicia la ejecución de la simulación
+             larissa();
         }
 
         public void larissa()
@@ -192,19 +203,16 @@ namespace proyectoArqui
 
                            if (!procesador1.getEjecucion())
                            {
-                              // Debug.WriteLine("entre al proc 1 \n");
                                procesador1.aumentarReloj_Ciclos();
                            }
 
                            if (!procesador2.getEjecucion())
                            {
-                              // Debug.WriteLine("entre al proc 2 \n");
                                procesador2.aumentarReloj_Ciclos();
                            }
 
                            if (!procesador3.getEjecucion())
                            {
-                               //Debug.WriteLine("entre al proc 3 \n");
                                procesador3.aumentarReloj_Ciclos();
                            }
 
@@ -224,7 +232,7 @@ namespace proyectoArqui
                 {
                     for(int j = 0; j < procesador1.columnasContexto; ++j)
                     {
-                        Debug.WriteLine("Esto tiene el contexto" + procesador1.contexto[i, j]);
+                        Debug.WriteLine("Esto tiene el contextoooo" + procesador1.contexto[i, j]);
                     }
                 }
 

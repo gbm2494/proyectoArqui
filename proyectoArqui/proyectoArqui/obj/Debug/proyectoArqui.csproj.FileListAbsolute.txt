@@ -42,3 +42,4 @@ C:\Users\Gaudy-PC\UCR\2016 I Ciclo\Arquitectura de Computadoras\Proyecto\proyect
 C:\Users\Gaudy-PC\UCR\2016 I Ciclo\Arquitectura de Computadoras\Proyecto\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.Properties.Resources.resources
 C:\Users\Gaudy-PC\UCR\2016 I Ciclo\Arquitectura de Computadoras\Proyecto\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.Resultados.resources
 C:\Users\Gaudy-PC\UCR\2016 I Ciclo\Arquitectura de Computadoras\Proyecto\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.csproj.GenerateResource.Cache
+C:\Users\Lari\Desktop\Arqui\proyectoArqui\proyectoArqui\proyectoArqui\obj\Debug\proyectoArqui.csprojResolveAssemblyReference.cache

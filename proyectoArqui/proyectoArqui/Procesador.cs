@@ -61,8 +61,6 @@ namespace proyectoArqui
         /*Variable que se utiliza para saber si un procesador ya terminó todas las ejecuciones de sus hilillos */
         bool terminarEjecucion = false;
 
-        /*Variable que se utiliza para saber que un hilo debe sacarse del procesador pues ya se terminaron de ejecutar sus instrucciones */
-        bool hiloFinalizado = false;
 
         /*Arreglo donde el número de filas indican la cantidad de hilos a ejecutar, la primer columna simboliza el número del hilo, la segunda 
          la cantidad de ciclos realizados, la tercera el valor del reloj al iniciar la ejecución y la cuarta el valor del reloj al finalizar la 
@@ -70,6 +68,12 @@ namespace proyectoArqui
         public readonly int filasDatosHilos;
         public const int columnasDatosHilos = 6;
         public int[,] datosHilos;
+
+
+        /* Arreglo utilizado para conocer el estado del hilo ejecutandose: si es la primera vez y si ya terminó ejecución */
+        readonly int filasEjecucionHilos;
+        readonly int columnasEjecucionHilos = 2;
+        public int[,] ejecucionHilos;
 
         /*Método para pruebas que imprime en el debugger la memoria del procesador*/
         public void imprimirMemoria() {
@@ -108,6 +112,9 @@ namespace proyectoArqui
             {
                 retorno = retorno + contexto[idHilo, i] + " ";
             }
+
+            Debug.WriteLine("este es el id del hilo " + idHilo);
+            Debug.WriteLine("este contiene el contexto " + retorno);
 
             return retorno;
         }
@@ -162,6 +169,9 @@ namespace proyectoArqui
 
             filasDatosHilos = numHilos;
             datosHilos = new int[filasDatosHilos, columnasDatosHilos];
+
+            filasEjecucionHilos = numHilos;
+            ejecucionHilos = new int[filasEjecucionHilos, columnasEjecucionHilos];
 
             hilosActivos = numHilos;
 
@@ -223,13 +233,22 @@ namespace proyectoArqui
                 }
             }
 
+            /* Se inicializa con ceros el arreglo que mantiene el estado de ejecución de cada hilo */
+            for (int i = 0; i < filasEjecucionHilos; ++i)
+            {
+                for (int j = 0; j < columnasEjecucionHilos; ++j)
+                {
+                    ejecucionHilos[i, j] = 0;
+                }
+            }
+
         }
 
         /*Método para indicar en el arreglo el número del hilo así como el número del procesador donde correrá el hilo */
         public void setNumHilo_Procesador(int numFila, int numHilo, int numProcesador)
         {
             datosHilos[numFila, 0] = numHilo;
-            datosHilos[numFila, 3] = numProcesador;
+            datosHilos[numFila, 4] = numProcesador;
         }
 
         /*Método para indicar en el arreglo el valor inicial del reloj al iniciar la ejecucion del hilo */
@@ -244,11 +263,8 @@ namespace proyectoArqui
             /*Calcula el bloque en memoria*/
             int bloque = PC / 16;
 
-            /* Se cambia el valor del PC a la dirección de la próxima instrucción */
-            PC = PC + 4;
-
             /*Calcula la palabra en memoria*/
-            int palabra = bloque % 16;
+            int palabra = PC % 16;
             palabra = palabra / 4;
 
             /*Calcula el indice en la caché*/
@@ -262,6 +278,9 @@ namespace proyectoArqui
             //Se ejecuta la instrucción porque estaba en cache	
             if (cache[4, indice * 4] == bloque)
             {
+                /* Se cambia el valor del PC a la dirección de la próxima instrucción */
+                PC = PC + 4;
+
                 ejecutarInstruccion();
                 barreraFinInstr.SignalAndWait();
                 barreraCambioReloj_Ciclo.SignalAndWait();
@@ -287,17 +306,13 @@ namespace proyectoArqui
         {
             string operando;
 
-            /* Variable utilizada para conocer el número de fila donde se encuentra la palabra que se desea ejecutar */
-           int contadorFilas = 0;
+            /* Variable utilizada para conocer el número de fila donde se encuentra la palabra que se desea ejecutar, Ubicacion[1] 
+         posee el número de palabra a ejecutar, pero como se requiere el índice, debo restarle 1  */
+            int contadorFilas = ubicacion[1];
 
+            /* Se obtiene el primer operando de la palabra o instrucción*/
 
-           /* Se busca la fila en donde se encuentra la palabra que se debe ejecutar, ubicacion[2] posee la palabra */
-            while(contadorFilas < 4 && cache[contadorFilas, ubicacion[2]*4 ] != ubicacion[1])
-            {
-                ++contadorFilas;
-            }
-
-            int codigoOperacion = cache[contadorFilas,ubicacion[2]*4];
+            int codigoOperacion = cache[contadorFilas, ubicacion[2] * 4];
 
             if(operaciones.TryGetValue(codigoOperacion, out operando))
             {
@@ -351,11 +366,16 @@ namespace proyectoArqui
                             PC = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]];
                             break;
                         case "FIN":
+
+                            /* Se disminuye la cantidad de hilos activos en el procesador */
                             --hilosActivos;
+
                             /* Se guarda el valor del reloj porque ya se terminó de ejecutar el hilo. Se guarda el valor del reloj aumentado porque
                             en este punto el hilo principal aún no ha aumentado el valor del reloj. */
-                            datosHilos[filaContextoActual, 4] = ++reloj;
-                            hiloFinalizado = true;
+                            datosHilos[filaContextoActual, 3] = ++reloj;
+
+                            /* Se indica que un hilo ya no está en ejecucion */
+                            ejecucionHilos[filaContextoActual, 1] = 1;
                             break;
                     }
             }
@@ -370,7 +390,8 @@ namespace proyectoArqui
         public void ejecutarFalloCache()
         {
             /*Calcula la dirección fisica en memoria*/
-            int direccionFisica = PC - 128;
+            int numBloque = ubicacion[0] - 8;
+            int direccionFisica = numBloque * 16;
        
 
 
@@ -408,7 +429,7 @@ namespace proyectoArqui
             ++reloj;
 
             //La columna 3 del arreglo datosHilos[] simboliza la cantidad de ciclos, por lo que se aumenta dicha cantidad. 
-            ++datosHilos[filaContextoActual, 2];
+            ++datosHilos[filaContextoActual, 1];
         }
 
         /* Método para obtener el valor de la variable terminarEjecución que indica si el procesador se encuentra aún con hilos pendientes
@@ -427,102 +448,98 @@ namespace proyectoArqui
 
             while (hilosActivos > 0)
             {
-                while (contadorInstrucciones < quantum)
+               // Debug.WriteLine("eso vale el fila contexto " + filaContextoActual);
+              //  Debug.WriteLine("este es el tam de fila contexto: " + filasContexto);
+                while (contadorInstrucciones < quantum && filaContextoActual < filasContexto && ejecucionHilos[filaContextoActual, 1] == 0)
                 {
                     contadorInstrucciones++;
                     leerInstruccion();               
                 }
 
-                //Se copia en el contexto los registros porque se acabó el quantum
-                for (contadorContexto = 0; contadorContexto < columnasContexto-1; ++contadorContexto)
+                if(filaContextoActual < filasContexto)
                 {
-                    contexto[filaContextoActual, contadorContexto] = registros[contadorContexto];
-                }
-
-                /*Se verifica si es la primera vez que se ejecuta el hilo, pues en caso de serlo se debe guardar el valor actual del reloj */
-                if(datosHilos[filaContextoActual, 5] == 0)
-                {
-                    datosHilos[filaContextoActual, 5] = 1;
-                    datosHilos[filaContextoActual, 2] = reloj;
-                }
-
-                //Se copia en la última columna del contexto el PC a ejecutar posteriormente o -1 si ya el hilo se terminó de ejecutar
-                if(hiloFinalizado)
-                {
-                    contexto[filaContextoActual, contadorContexto] = -1;
-                }
-                else
-                {
-                    contexto[filaContextoActual, contadorContexto] = PC;
-                }
-               
-
-                //Se inicializa en 0 nuevamente el contador de instrucciones
-                contadorInstrucciones = 0;
-
-                //Se verifica si la fila actual del contexto es la última, pues en caso de serlo, el siguiente
-                //hilillo a ejecutar es el ubicado en la primer fila del contexto, sino se ejecuta el que se encuentra en la siguiente fila.
-                ++filaContextoActual;
-
-                if (filaContextoActual == filasContexto)
-                {
-                    filaContextoActual = 0;
-                    while(filaContextoActual < filasContexto && contexto[filaContextoActual, columnasContexto - 1] == -1)
+                    //Se copia en el contexto los registros porque se acabó el quantum
+                    for (contadorContexto = 0; contadorContexto < columnasContexto - 1; ++contadorContexto)
                     {
-                        ++filaContextoActual;
+                        contexto[filaContextoActual, contadorContexto] = registros[contadorContexto];
                     }
 
-                    if (filaContextoActual < filasContexto)
+                    /*Se verifica si es la primera vez que se ejecuta el hilo, pues en caso de serlo se debe guardar el valor actual del reloj */
+                    if (datosHilos[filaContextoActual, 5] == 0)
                     {
-                        PC = contexto[filaContextoActual, columnasContexto - 1];
-                    }
-                }
-                else
-                {
-                    while (contexto[filaContextoActual, columnasContexto - 1] == -1)
-                    {
-                        if(filaContextoActual == filasContexto-1)
-                        {
-                            filaContextoActual = 0;
-                        }
-                        else
-                        {
-                            ++filaContextoActual;
-                        }
-                        
+                        datosHilos[filaContextoActual, 5] = 1;
+                        datosHilos[filaContextoActual, 2] = reloj;
                     }
 
-                    PC = contexto[filaContextoActual, columnasContexto - 1];
-                }
-
-
-
-            /*    if (filaContextoActual == filasContexto)
-                {
-                    if(contexto[0, columnasContexto - 1] != -1)
+                    //Se copia en la última columna del contexto el PC a ejecutar posteriormente o -1 si ya el hilo se terminó de ejecutar
+                    if (ejecucionHilos[filaContextoActual, 1] == 1)
                     {
-                        PC = contexto[0, columnasContexto - 1];
-                        filaContextoActual = 0;
+                        contexto[filaContextoActual, contadorContexto] = -1;
                     }
                     else
                     {
-                        PC = contexto[1, columnasContexto - 1];
-                        filaContextoActual = 1;
+                        contexto[filaContextoActual, contadorContexto] = PC;
                     }
-                    
-                }
-                else
-                {
-                    if (contexto[filaContextoActual, columnasContexto - 1] != -1)
-                    {
 
-                    }
+
+                    //Se inicializa en 0 nuevamente el contador de instrucciones
+                    contadorInstrucciones = 0;
+
+                    //Se verifica si la fila actual del contexto es la última, pues en caso de serlo, el siguiente
+                    //hilillo a ejecutar es el ubicado en la primer fila del contexto, sino se ejecuta el que se encuentra en la siguiente fila.
                     ++filaContextoActual;
-                    PC = contexto[filaContextoActual, columnasContexto - 1];
-                    
-                } */
+
+                    if (filaContextoActual == filasContexto)
+                    {
+                        filaContextoActual = 0;
+                        while (filaContextoActual < filasContexto && contexto[filaContextoActual, columnasContexto - 1] == -1)
+                        {
+                            ++filaContextoActual;
+                        }
+
+                        if (filaContextoActual < filasContexto)
+                        {
+                            PC = contexto[filaContextoActual, columnasContexto - 1];
+                        }
+                    }
+                    else
+                    {
+                        int contador = 0;
+                        while (contador < filasContexto && contexto[filaContextoActual, columnasContexto - 1] == -1)
+                        {
+                            if (filaContextoActual == filasContexto - 1)
+                            {
+                                filaContextoActual = 0;
+                            }
+                            else
+                            {
+                                ++filaContextoActual;
+                            }
+
+                            ++contador;
+
+                        }
+
+
+                        PC = contexto[filaContextoActual, columnasContexto - 1];
+                    }
+
+                    /* Se realiza solo cuando el procesador posee más de un hilo */
+                    if (filaContextoActual < filasContexto)
+                    {
+                        //Se copia en los registros el contexto del hilo a ejecutar proximamente
+                        for (contadorContexto = 0; contadorContexto < columnasContexto - 1; ++contadorContexto)
+                        {
+                            registros[contadorContexto] = contexto[filaContextoActual, contadorContexto];
+                        }
+                    }
+
+                }
+               
 
             }
+
+            Debug.WriteLine("TERMINE EJECUCION");
 
             terminarEjecucion = true;
             barreraFinInstr.RemoveParticipant();
