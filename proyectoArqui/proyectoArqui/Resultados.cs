@@ -72,7 +72,7 @@ namespace proyectoArqui
         /**/
         public void llenarInterfaz() 
         {
-            string[] nombres;
+            string[] nombres = new string[totalProcesadores];
 
             for (int i = 0; i < totalProcesadores; i++)
             {

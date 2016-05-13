@@ -72,7 +72,6 @@ namespace proyectoArqui
                     procesador2.quantum = quantum;
                     procesador3.quantum = quantum;
 
-                
             }
         }
 
@@ -156,9 +155,10 @@ namespace proyectoArqui
                          }
                      }
                  }
-
-                 
+            
              }
+
+            // larissa();
         }
 
         public void larissa()
@@ -169,52 +169,56 @@ namespace proyectoArqui
             Thread hiloProcesador3 = new Thread(new ThreadStart(procesador3.ejecutarInstrucciones));
 
 
-            /* AQUI SE INDICA EL QUANTUM, SE LLENA LA MEMORIA, SE LLENA EL CONTEXTO Y SE PONE EL PC DE CADA PROCESADOR (PARA ESO ULTIMA
-             * SE APUNTA AL PRIMER CAMPO DE CADA MEMORIA) */
-
             /*Se ejecutan los hilos que simulan los procesador */
-            /*    hiloProcesador1.Start();
-                  hiloProcesador2.Start();
-                  hiloProcesador3.Start(); */
+                hiloProcesador1.Start();
+                hiloProcesador2.Start();
+                hiloProcesador3.Start(); 
 
             /* Ciclo que se ejecuta mientras hayan hilos de procesadores activos */
-            /*       while (hiloProcesador1.IsAlive || hiloProcesador2.IsAlive || hiloProcesador3.IsAlive)
+                   while (hiloProcesador1.IsAlive || hiloProcesador2.IsAlive || hiloProcesador3.IsAlive)
                      {
                        /* El hilo principal alcanza la barrera de fin de instrucción. Una vez que los otros 3 hilos la alcancen se aumentará
                           el reloj en cada procesador siempre y cuando éste se encuentre activo. */
-            /*            proyectoArqui.Procesador.barreraFinInstr.SignalAndWait();
+                        proyectoArqui.Procesador.barreraFinInstr.SignalAndWait();
 
                            if (!procesador1.getEjecucion())
                            {
-                               Debug.WriteLine("entre al proc 1 \n");
-                               Console.Write("entre al proc 1 \n");
+                              // Debug.WriteLine("entre al proc 1 \n");
                                procesador1.aumentarReloj_Ciclos();
                            }
 
                            if (!procesador2.getEjecucion())
                            {
-                               Debug.WriteLine("entre al proc 2 \n");
-                               Console.Write("entre al proc 1 \n");
+                              // Debug.WriteLine("entre al proc 2 \n");
                                procesador2.aumentarReloj_Ciclos();
                            }
 
                            if (!procesador3.getEjecucion())
                            {
-                               Debug.WriteLine("entre al proc 3 \n");
-                               Console.Write("entre al proc 3 \n");
+                               //Debug.WriteLine("entre al proc 3 \n");
                                procesador3.aumentarReloj_Ciclos();
                            }
 
                            /* El hilo principal alcanza la barrera de fin cambio de reloj, donde se les indica a los otros hilos que pueden continuar
                            con la lectura de la próxima instrucción */
-            /*      proyectoArqui.Procesador.barreraCambioReloj_Ciclo.SignalAndWait();
+                 proyectoArqui.Procesador.barreraCambioReloj_Ciclo.SignalAndWait();
 
                 }
 
         
-             /*   hiloProcesador1.Join();
-                  hiloProcesador2.Join();
-                  hiloProcesador3.Join(); */
+                hiloProcesador1.Join();
+                hiloProcesador2.Join();
+                hiloProcesador3.Join();
+
+                Debug.WriteLine("LLEGUE AL FINAAAAAAL");
+                
+                for(int i = 0; i < procesador1.filasContexto; ++i)
+                {
+                    for(int j = 0; j < procesador1.columnasContexto; ++j)
+                    {
+                        Debug.WriteLine("Esto tiene el contexto" + procesador1.contexto[i, j]);
+                    }
+                }
 
             /* El hilo principal muestra los resultados finales de cada procesador */
 

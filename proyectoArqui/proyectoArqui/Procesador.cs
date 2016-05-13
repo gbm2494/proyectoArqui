@@ -15,7 +15,7 @@ namespace proyectoArqui
         public int quantum = 0;
 
         //variable para almacenar cuantos hilos tiene activos ese procesador
-        int hilosActivos = 0;
+        public int hilosActivos;
 
         //program counter del procesador
         int PC = 128;
@@ -30,12 +30,12 @@ namespace proyectoArqui
 	    int[] registros = new int[cantidadRegistros];
 
         //Contiene el PC y los registros de cada hilo, primero los 32 registros y por último el PC
-        readonly int filasContexto;
-        public const int columnasContexto = 33;
+        public readonly int filasContexto;
+        public readonly int columnasContexto = 33;
         public int[,] contexto; 
 
         //Variable para manejar el reloj del procesador
-        int reloj = 0;
+        int reloj = 1;
 
         //Diccionario que asocia el operando con su correspondiente operacion
 	    Dictionary<int,string> operaciones = new Dictionary<int, string>(); 
@@ -61,12 +61,15 @@ namespace proyectoArqui
         /*Variable que se utiliza para saber si un procesador ya terminó todas las ejecuciones de sus hilillos */
         bool terminarEjecucion = false;
 
+        /*Variable que se utiliza para saber que un hilo debe sacarse del procesador pues ya se terminaron de ejecutar sus instrucciones */
+        bool hiloFinalizado = false;
+
         /*Arreglo donde el número de filas indican la cantidad de hilos a ejecutar, la primer columna simboliza el número del hilo, la segunda 
          la cantidad de ciclos realizados, la tercera el valor del reloj al iniciar la ejecución y la cuarta el valor del reloj al finalizar la 
          ejecución y la cuarta el número del procesador donde se ejecutará el hilo. */
-        readonly int filasDatosHilos;
-        public const int columnasDatosHilos = 5;
-        int[,] datosHilos;
+        public readonly int filasDatosHilos;
+        public const int columnasDatosHilos = 6;
+        public int[,] datosHilos;
 
         public void imprimirMemoria() {
             for (int i = 0; i < cantidadMemoria; i++)
@@ -113,6 +116,8 @@ namespace proyectoArqui
 
             filasDatosHilos = numHilos;
             datosHilos = new int[filasDatosHilos, columnasDatosHilos];
+
+            hilosActivos = numHilos;
 
             inicializarEstructuras();
         }
@@ -180,7 +185,7 @@ namespace proyectoArqui
         public void setNumHilo_Procesador(int numFila, int numHilo, int numProcesador)
         {
             datosHilos[numFila, 0] = numHilo;
-            datosHilos[numFila, 4] = numProcesador;
+            datosHilos[numFila, 3] = numProcesador;
         }
 
         /*Método para indicar en el arreglo el valor inicial del reloj al iniciar la ejecucion del hilo */
@@ -214,7 +219,7 @@ namespace proyectoArqui
             ubicacion[2] = indice;
 
             //Se ejecuta la instrucción porque estaba en cache	
-            if (cache[5, indice * 4] == bloque)
+            if (cache[4, indice * 4] == bloque)
             {
                 ejecutarInstruccion();
                 barreraFinInstr.SignalAndWait();
@@ -246,12 +251,12 @@ namespace proyectoArqui
 
 
            /* Se busca la fila en donde se encuentra la palabra que se debe ejecutar, ubicacion[2] posee la palabra */
-            while(contadorFilas < 4 && cache[contadorFilas, ubicacion[3]*4 ] != ubicacion[2])
+            while(contadorFilas < 4 && cache[contadorFilas, ubicacion[2]*4 ] != ubicacion[1])
             {
                 ++contadorFilas;
             }
 
-            int codigoOperacion = cache[contadorFilas,ubicacion[3]*4];
+            int codigoOperacion = cache[contadorFilas,ubicacion[2]*4];
 
             if(operaciones.TryGetValue(codigoOperacion, out operando))
             {
@@ -259,54 +264,57 @@ namespace proyectoArqui
                     {
                         case "DADDI":
                             /* Ubicacion[3] contiene el índice de la cache donde se encuentra el bloque almacenado  */
-                            registros[cache[contadorFilas, ubicacion[3] * 4 + 2]] = registros[cache[contadorFilas, ubicacion[3] * 4 + 1]] + cache[contadorFilas, ubicacion[3] * 4 + 3];
+                            registros[cache[contadorFilas, ubicacion[2] * 4 + 2]] = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] + cache[contadorFilas, ubicacion[2] * 4 + 3];
                             break;
                         case "DADD":
-                            registros[cache[contadorFilas, ubicacion[3] * 4 + 3]] = registros[cache[contadorFilas, ubicacion[3] * 4 + 1]] + registros[cache[contadorFilas, ubicacion[3] * 4 + 2]];
+                            registros[cache[contadorFilas, ubicacion[2] * 4 + 3]] = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] + registros[cache[contadorFilas, ubicacion[2] * 4 + 2]];
                             break;
                         case "DSUB":
-                            registros[cache[contadorFilas, ubicacion[3] * 4 + 3]] = registros[cache[contadorFilas, ubicacion[3] * 4 + 1]] - registros[cache[contadorFilas, ubicacion[3] * 4 + 2]];
+                            registros[cache[contadorFilas, ubicacion[2] * 4 + 3]] = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] - registros[cache[contadorFilas, ubicacion[2] * 4 + 2]];
                             break;
                         case "DMUL":
-                            registros[cache[contadorFilas, ubicacion[3] * 4 + 3]] = registros[cache[contadorFilas, ubicacion[3] * 4 + 1]] * registros[cache[contadorFilas, ubicacion[3] * 4 + 2]];
+                            registros[cache[contadorFilas, ubicacion[2] * 4 + 3]] = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] * registros[cache[contadorFilas, ubicacion[2] * 4 + 2]];
                             break;
                         case "DDIV":
-                            registros[cache[contadorFilas, ubicacion[3] * 4 + 3]] = registros[cache[contadorFilas, ubicacion[3] * 4 + 1]] / registros[cache[contadorFilas, ubicacion[3] * 4 + 2]];
+                            Debug.WriteLine("esto tiene el primer operando en div: " + registros[cache[contadorFilas, ubicacion[2] * 4 + 1]]);
+                            Debug.WriteLine("esto tiene el segundo operando en div: " + registros[cache[contadorFilas, ubicacion[2] * 4 + 2]]);
+                            registros[cache[contadorFilas, ubicacion[2] * 4 + 3]] = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] / registros[cache[contadorFilas, ubicacion[2] * 4 + 2]];
                             break;
                         case "BEQZ":
                             /* Se verifica la condición del salto */
-                            if(registros[cache[contadorFilas, ubicacion[3] * 4 + 1]] == 0)
+                            if(registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] == 0)
                             {
                                 /* Se multiplica la cantidad de instrucciones que debe retornarse por 4 debido a que una instrucción equivale a
                                  1 palabra, es decir, a 4 bytes, por lo que la dirección de la próxima instrucción a ejecutar estará a 4 bytes 
                                  de distancia. */
-                                PC = PC + (cache[contadorFilas, ubicacion[3] * 4 + 3]*4);
+                                PC = PC + (cache[contadorFilas, ubicacion[2] * 4 + 3]*4);
 
                             }
                             break;
                         case "BNEZ":
                             /* Se verifica la condición del salto */
-                            if (registros[cache[contadorFilas, ubicacion[3] * 4 + 1]] != 0)
+                            if (registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] != 0)
                             {
                                 /* Se multiplica la cantidad de instrucciones que debe retornarse por 4 debido a que una instrucción equivale a
                                  1 palabra, es decir, a 4 bytes, por lo que la dirección de la próxima instrucción a ejecutar estará a 4 bytes 
                                  de distancia. */
-                                PC = PC + (cache[contadorFilas, ubicacion[3] * 4 + 3] * 4);
+                                PC = PC + (cache[contadorFilas, ubicacion[2] * 4 + 3] * 4);
 
                             }
                             break;
                         case "JAL":
                             registros[31] = PC;
-                            PC = PC + cache[contadorFilas, ubicacion[3] * 4 + 3];
+                            PC = PC + cache[contadorFilas, ubicacion[2] * 4 + 3];
                             break;
                         case "JR":
-                            PC = registros[cache[contadorFilas, ubicacion[3] * 4 + 1]];
+                            PC = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]];
                             break;
                         case "FIN":
                             --hilosActivos;
                             /* Se guarda el valor del reloj porque ya se terminó de ejecutar el hilo. Se guarda el valor del reloj aumentado porque
                             en este punto el hilo principal aún no ha aumentado el valor del reloj. */
-                            datosHilos[filaContextoActual, 3] = ++reloj;
+                            datosHilos[filaContextoActual, 4] = ++reloj;
+                            hiloFinalizado = true;
                             break;
                     }
             }
@@ -322,6 +330,8 @@ namespace proyectoArqui
         {
             /*Calcula la dirección fisica en memoria*/
             int direccionFisica = PC - 128;
+       
+
 
             /*Carga en caché lo que está apuntando la dirección fisica */
             for (int i = 0; i < 5; ++i)
@@ -388,25 +398,88 @@ namespace proyectoArqui
                     contexto[filaContextoActual, contadorContexto] = registros[contadorContexto];
                 }
 
-                //Se copia en la última columna del contexto el PC a ejecutar posteriormente
-                contexto[filaContextoActual, contadorContexto] = PC + 4;
+                /*Se verifica si es la primera vez que se ejecuta el hilo, pues en caso de serlo se debe guardar el valor actual del reloj */
+                if(datosHilos[filaContextoActual, 5] == 0)
+                {
+                    datosHilos[filaContextoActual, 5] = 1;
+                    datosHilos[filaContextoActual, 2] = reloj;
+                }
+
+                //Se copia en la última columna del contexto el PC a ejecutar posteriormente o -1 si ya el hilo se terminó de ejecutar
+                if(hiloFinalizado)
+                {
+                    contexto[filaContextoActual, contadorContexto] = -1;
+                }
+                else
+                {
+                    contexto[filaContextoActual, contadorContexto] = PC;
+                }
+               
 
                 //Se inicializa en 0 nuevamente el contador de instrucciones
                 contadorInstrucciones = 0;
 
                 //Se verifica si la fila actual del contexto es la última, pues en caso de serlo, el siguiente
                 //hilillo a ejecutar es el ubicado en la primer fila del contexto, sino se ejecuta el que se encuentra en la siguiente fila.
+                ++filaContextoActual;
+
                 if (filaContextoActual == filasContexto)
                 {
-                    PC = contexto[0, columnasContexto - 1];
                     filaContextoActual = 0;
+                    while(filaContextoActual < filasContexto && contexto[filaContextoActual, columnasContexto - 1] == -1)
+                    {
+                        ++filaContextoActual;
+                    }
+
+                    if (filaContextoActual < filasContexto)
+                    {
+                        PC = contexto[filaContextoActual, columnasContexto - 1];
+                    }
                 }
                 else
                 {
+                    while (contexto[filaContextoActual, columnasContexto - 1] == -1)
+                    {
+                        if(filaContextoActual == filasContexto-1)
+                        {
+                            filaContextoActual = 0;
+                        }
+                        else
+                        {
+                            ++filaContextoActual;
+                        }
+                        
+                    }
+
+                    PC = contexto[filaContextoActual, columnasContexto - 1];
+                }
+
+
+
+            /*    if (filaContextoActual == filasContexto)
+                {
+                    if(contexto[0, columnasContexto - 1] != -1)
+                    {
+                        PC = contexto[0, columnasContexto - 1];
+                        filaContextoActual = 0;
+                    }
+                    else
+                    {
+                        PC = contexto[1, columnasContexto - 1];
+                        filaContextoActual = 1;
+                    }
+                    
+                }
+                else
+                {
+                    if (contexto[filaContextoActual, columnasContexto - 1] != -1)
+                    {
+
+                    }
                     ++filaContextoActual;
                     PC = contexto[filaContextoActual, columnasContexto - 1];
                     
-                }
+                } */
 
             }
 
