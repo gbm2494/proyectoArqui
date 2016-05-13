@@ -464,13 +464,7 @@ namespace proyectoArqui
                         contexto[filaContextoActual, contadorContexto] = registros[contadorContexto];
                     }
 
-                    /*Se verifica si es la primera vez que se ejecuta el hilo, pues en caso de serlo se debe guardar el valor actual del reloj */
-                    if (ejecucionHilos[filaContextoActual, 0] == 0)
-                    {
-                        ejecucionHilos[filaContextoActual, 0] = 1;
-                        datosHilos[filaContextoActual, 2] = reloj;
-                    }
-
+                    
                     //Se copia en la última columna del contexto el PC a ejecutar posteriormente o -1 si ya el hilo se terminó de ejecutar
                     if (ejecucionHilos[filaContextoActual, 1] == 1)
                     {
@@ -531,6 +525,13 @@ namespace proyectoArqui
                         for (contadorContexto = 0; contadorContexto < columnasContexto - 1; ++contadorContexto)
                         {
                             registros[contadorContexto] = contexto[filaContextoActual, contadorContexto];
+                        }
+
+                        /*Se verifica si es la primera vez que se ejecuta el hilo, pues en caso de serlo se debe guardar el valor actual del reloj */
+                        if (ejecucionHilos[filaContextoActual, 0] == 0)
+                        {
+                            ejecucionHilos[filaContextoActual, 0] = 1;
+                            datosHilos[filaContextoActual, 2] = reloj;
                         }
                     }
 
