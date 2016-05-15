@@ -37,9 +37,18 @@ namespace proyectoArqui
             /*Si se proporcionaron los datos correctos y la ruta de archivos continua la simulación*/
             if (rutaHilos != null && !txtHilos.Text.ToString().Equals("") && !txtQuantum.Text.ToString().Equals(""))
             {
-                Resultados resultados = new Resultados(rutaHilos, Convert.ToInt32(txtHilos.Text), Convert.ToInt32(txtQuantum.Text));
-                resultados.Show();
-                this.Hide();
+                if (Convert.ToInt32(txtQuantum.Text) == 0)
+                {
+                    MessageBox.Show("El valor del quantum debe ser mayor a 0", "Error de archivos", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                }
+                else
+                {
+                    Resultados resultados = new Resultados(rutaHilos, Convert.ToInt32(txtHilos.Text), Convert.ToInt32(txtQuantum.Text));
+                    resultados.Show();
+                    this.Hide();
+                }
+                
             }
 
             /*Si no se seleccionó la ruta de la carpeta con los hilos muestra un error*/
