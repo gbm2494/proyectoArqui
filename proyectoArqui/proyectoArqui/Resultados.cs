@@ -52,7 +52,7 @@ namespace proyectoArqui
                     {
                         /*Si todo es válido se crea el objeto de tipo Controladora, se ejecuta la simulación y se muestran resultados*/
                         controlador = new Controladora(rutaHilos, cantidadHilos, valorQuantum);
-                        controlador.ejecutarSimulacion();
+                        controlador.llenarMemoria_Contexto();
                         llenarInterfaz();
                     }
                     /*cantidad de hilos es mayor a 12, no puede ser ejecutado en la simulación*/
