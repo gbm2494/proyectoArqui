@@ -29,9 +29,11 @@ namespace proyectoArqui
         int hilos;
         int quantum;
 
-        /*contador que almacena cuantos hilos tiene asigndo cada procesador*/
+        /*contador que almacena cuántos hilos tiene asigndo cada procesador*/
         int[] cantidadHilos;
 
+        /* Constructor en el cual se lee la cantidad de archivos para repartirlos entre los 3 procesadores. Se crean además las instancias de los 
+        procesadores al indicarle a cada uno cuántos hilos manejará y se les señala el valor del quantum para cada uno de ellos */
         public Controladora(string rutaHilos, int numHilos, int valorQuantum)
         {
             /*Se inicializan los atributos de la clase*/
@@ -63,11 +65,13 @@ namespace proyectoArqui
                         cantidadHilos[contador % 3] = cantidadHilos[contador % 3] + 1;
                         contador++;
                     }
+
                     //Creación de las 3 instancias de la clase procesador
                     procesador1 = new Procesador(cantidadHilos[0]);
                     procesador2 = new Procesador(cantidadHilos[1]);
                     procesador3 = new Procesador(cantidadHilos[2]);
 
+                    //Indicación del valor del quantum de acuerdo a lo ingresado por el usuario
                     procesador1.quantum = quantum;
                     procesador2.quantum = quantum;
                     procesador3.quantum = quantum;
@@ -75,12 +79,9 @@ namespace proyectoArqui
             }
         }
 
-        /*Método para iniciar el proceso de simulación
-         * Recibe:
-           Modifica:
-           Retorna:
-         */
-        public void ejecutarSimulacion()
+        /*Método en el cual se llenan las memorias de los procesadores y sus contextos. Además se inicializa el valor del reloj en cada uno de 
+        los primeros hilos a ejecutar de los procesadores  */
+        public void llenarMemoria_Contexto()
         {
             /*posicion en memoria de los tres procesadores*/
             int[] posicionMemoria = new int[totalProcesadores];
@@ -197,6 +198,7 @@ namespace proyectoArqui
                 }
 
                 procesador1.setValorInicialReloj();
+
                 //Se indica que ya el hilo va a inicar ejecucion
                 procesador1.ejecucionHilos[0, 0] = 1;
 
@@ -206,6 +208,7 @@ namespace proyectoArqui
              iniciarSimulacion();
         }
 
+        /* Método que ejecuta la lectura y ejecución de las instrucciones de los hilillos ubicados en los hilos de tipo procesador */
         public void iniciarSimulacion()
         {
             //Creación de los 3 hilos, uno para cada procesador
@@ -214,10 +217,10 @@ namespace proyectoArqui
             Thread hiloProcesador3 = new Thread(new ThreadStart(procesador3.ejecutarInstrucciones));
 
 
-            /*Se ejecutan los hilos que simulan los procesador */
-                hiloProcesador1.Start();
-                hiloProcesador2.Start();
-                hiloProcesador3.Start(); 
+            /*Se ejecutan los hilos que simulan los procesadores */
+            hiloProcesador1.Start();
+            hiloProcesador2.Start();
+            hiloProcesador3.Start(); 
 
             /* Ciclo que se ejecuta mientras hayan hilos de procesadores activos */
                    while (hiloProcesador1.IsAlive || hiloProcesador2.IsAlive || hiloProcesador3.IsAlive)
@@ -243,10 +246,11 @@ namespace proyectoArqui
 
                            /* El hilo principal alcanza la barrera de fin cambio de reloj, donde se les indica a los otros hilos que pueden continuar
                            con la lectura de la próxima instrucción */
-                 proyectoArqui.Procesador.barreraCambioReloj_Ciclo.SignalAndWait();
+                           proyectoArqui.Procesador.barreraCambioReloj_Ciclo.SignalAndWait();
 
                 }
 
+                //El hilo principal termina la ejecución del método hasta que los otros 3 hilos finalicen ejecución
                 hiloProcesador1.Join();
                 hiloProcesador2.Join();
                 hiloProcesador3.Join();

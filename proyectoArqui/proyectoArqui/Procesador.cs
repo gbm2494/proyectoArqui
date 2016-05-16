@@ -14,20 +14,20 @@ namespace proyectoArqui
         //variable para almacenar el quantum
         public int quantum = 0;
 
-        //variable para almacenar cuantos hilos tiene activos ese procesador
+        //variable para almacenar cuantos hilos tiene activos el procesador
         public int hilosActivos;
 
         //program counter del procesador
-        int PC = 128;
+        private int PC = 128;
 
-        //cache del procesador, 4 palabras + el bloque, y 4x4 bloques
+        //cache del procesador, 4 palabras + el bloque, cada palabra es de 1 byte, por lo tanto el tamaño es de 5x16 
         public const int filasCache = 5;
         public const int columnasCache = 16;
 	    int[,] cache = new int[filasCache,columnasCache];
 
         //contiene los 32 registros del procesador
-        public const int cantidadRegistros = 32;
-	    int[] registros = new int[cantidadRegistros];
+        private const int cantidadRegistros = 32;
+	    private int[] registros = new int[cantidadRegistros];
 
         //Contiene el PC y los registros de cada hilo, primero los 32 registros y por último el PC
         public readonly int filasContexto;
@@ -35,20 +35,20 @@ namespace proyectoArqui
         public int[,] contexto; 
 
         //Variable para manejar el reloj del procesador
-        int reloj = 1;
+        private int reloj = 1;
 
         //Diccionario que asocia el operando con su correspondiente operacion
-	    Dictionary<int,string> operaciones = new Dictionary<int, string>(); 
+	    private Dictionary<int,string> operaciones = new Dictionary<int, string>(); 
 
-        //vector para bloque, palabra e indice
-	    int[] ubicacion = new int[3];
+        //vector para almacenar el número de bloque, palabra e indice a partir de la lectura del PC
+	    private int[] ubicacion = new int[3];
 
         //Memoria principal del procesador, comienza en 128
         public const int cantidadMemoria = 256;
         public int[] memoria = new int[cantidadMemoria];
 
-        //Se almacena el número de fila del contexto ejecutándose actualmente
-        int filaContextoActual = 0;
+        //Se almacena el número de fila del contexto correspondiente al hilo ejecutándose actualmente
+        private int filaContextoActual = 0;
 
         /* Barrera para controlar cuando todos los hilos han ejecutado una instrucción, son 4 participantes porque el hilo principal
         también debe interactuar con éstos*/
@@ -59,14 +59,14 @@ namespace proyectoArqui
         public static Barrier barreraCambioReloj_Ciclo = new Barrier(participantCount: 4);
      
         /*Variable que se utiliza para saber si un procesador ya terminó todas las ejecuciones de sus hilillos */
-        bool terminarEjecucion = false;
+        private bool terminarEjecucion = false;
 
 
         /*Arreglo donde el número de filas indican la cantidad de hilos a ejecutar, la primer columna simboliza el número del hilo, la segunda 
-         la cantidad de ciclos realizados, la tercera el valor del reloj al iniciar la ejecución y la cuarta el valor del reloj al finalizar la 
-         ejecución y la cuarta el número del procesador donde se ejecutará el hilo. */
+         la cantidad de ciclos realizados, la tercera el valor del reloj al iniciar la ejecución, la cuarta el valor del reloj al finalizar la 
+         ejecución y la quinta el número del procesador donde se ejecutará el hilo. */
         public readonly int filasDatosHilos;
-        public const int columnasDatosHilos = 6;
+        public const int columnasDatosHilos = 5;
         public int[,] datosHilos;
 
 
@@ -161,17 +161,24 @@ namespace proyectoArqui
             operaciones.Add(2, "JR");
             operaciones.Add(63, "FIN");
 
+            //La cantidad de filas del contexto corresponde a la cantidad de hilos que manejará el procesador
             filasContexto = numHilos;
             contexto = new int[filasContexto, columnasContexto];
 
+            /* La cantidad de filas del arreglo que almacena los datos que se desplegarán
+            al finalizar el programa corresponde a la cantidad de hilos que manejará el procesador */
             filasDatosHilos = numHilos;
             datosHilos = new int[filasDatosHilos, columnasDatosHilos];
 
+            /* La cantidad de filas del arreglo que controla el estado de ejecución de cada hilo corresponde a la cantidad de hilos
+            que manejará el procesador */
             filasEjecucionHilos = numHilos;
             ejecucionHilos = new int[filasEjecucionHilos, columnasEjecucionHilos];
 
+            //La cantidad de hilos activos del procesador corresponde a la cantidad de hilos que manejará el procesador
             hilosActivos = numHilos;
 
+            //Método que inicializa cada uno de los arreglos con ceros
             inicializarEstructuras();
         }
 
@@ -191,7 +198,7 @@ namespace proyectoArqui
                             cache[contadorFilas, contadorColumnas] = 0;
                         }
 
-                        else
+                        else /* Se inicializa en -1 la última fila que corresponde al número del bloque guardado en caché */
                         {
                             cache[contadorFilas, contadorColumnas] = -1;
                         }
@@ -219,9 +226,9 @@ namespace proyectoArqui
                 }
             }
 
-            /* Se inicializa con ceros el arreglo que almacenará datos importantes sobre cada hilo, tales como el número de hilo la cantidad de ciclos
-             realizados, el valor del reloj al iniciar la ejecución, el valor del reloj al finalizar la ejecución y el número del procesador donde
-             se ejecutó */
+            /* Se inicializa con ceros el arreglo que almacenará datos importantes sobre cada hilo, tales como el número del hilo, la cantidad de 
+             ciclos realizados, el valor del reloj al iniciar la ejecución, el valor del reloj al finalizar la ejecución y el número del procesador
+             donde se ejecutó */
             for(int i = 0; i < filasDatosHilos; ++i)
             {
                 for(int j = 0; j < columnasDatosHilos; ++j)
@@ -267,25 +274,33 @@ namespace proyectoArqui
             /*Calcula el indice en la caché*/
             int indice = bloque % 4;
 
-            /*Vector que guarda los datos de la instrucción que se esté ejecutando*/
+            /*Vector que guarda los datos obtenidos a partir de la lectura del PC que se esté ejecutando*/
             ubicacion[0] = bloque;
             ubicacion[1] = palabra;
             ubicacion[2] = indice;
 
-            //Se ejecuta la instrucción porque estaba en cache	
+            //Se ejecuta la instrucción porque estaba en caché	
             if (cache[4, indice * 4] == bloque)
             {
                 /* Se cambia el valor del PC a la dirección de la próxima instrucción */
                 PC = PC + 4;
 
+                /* Se llama al método que ejecuta una instrucción en específico */
                 ejecutarInstruccion();
+
+                /* Barrera de sincronización que controla que todos los hilos de tipo Procesador y el hilo principal la alcancen una vez 
+                ejecutada la instrucción */
                 barreraFinInstr.SignalAndWait();
+
+                /* Barrera de sincronización que controla que todos los hilos de tipo Procesador y el hilo principal la alcancen una vez 
+                que todos ya pasaron la anterior, esta barrera se utiliza para esperar que el hilo principal le aumente a cada hilo de tipo 
+                Procesador su reloj y ciclos */
                 barreraCambioReloj_Ciclo.SignalAndWait();
 
             }
             else
             {
-                //Llama el metodo de fallo de cache
+                // Se llama el metodo de fallo de cache
                 ejecutarFalloCache();
 
                 //For de 16 ciclos para simular lo que se tarda en subir un bloque de memoria principal a caché
@@ -301,14 +316,14 @@ namespace proyectoArqui
         /*Método para ejecutar únicamente una instrucción */
         public void ejecutarInstruccion()
         {
+            //Variable que almacenará el tipo de operación de acuerdo al código de la misma
             string operando;
 
             /* Variable utilizada para conocer el número de fila donde se encuentra la palabra que se desea ejecutar, Ubicacion[1] 
-            posee el número de palabra a ejecutar, pero como se requiere el índice, debo restarle 1  */
+            posee el número de palabra a ejecutar */
             int contadorFilas = ubicacion[1];
 
-            /* Se obtiene el primer operando de la palabra o instrucción*/
-
+            /* Se obtiene el primer operando de la palabra o instrucción */
             int codigoOperacion = cache[contadorFilas, ubicacion[2] * 4];
 
             if(operaciones.TryGetValue(codigoOperacion, out operando))
@@ -316,23 +331,28 @@ namespace proyectoArqui
                     switch (operando)
                     {
                         case "DADDI":
-                            /* Ubicacion[3] contiene el índice de la cache donde se encuentra el bloque almacenado  */
+                            /* Ubicacion[2] contiene el índice de la caché donde se encuentra el bloque almacenado  */
                             registros[cache[contadorFilas, ubicacion[2] * 4 + 2]] = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] + cache[contadorFilas, ubicacion[2] * 4 + 3];
                             break;
                         case "DADD":
+                            /* Ubicacion[2] contiene el índice de la caché donde se encuentra el bloque almacenado  */
                             registros[cache[contadorFilas, ubicacion[2] * 4 + 3]] = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] + registros[cache[contadorFilas, ubicacion[2] * 4 + 2]];
                             break;
                         case "DSUB":
+                            /* Ubicacion[2] contiene el índice de la caché donde se encuentra el bloque almacenado  */
                             registros[cache[contadorFilas, ubicacion[2] * 4 + 3]] = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] - registros[cache[contadorFilas, ubicacion[2] * 4 + 2]];
                             break;
                         case "DMUL":
+                            /* Ubicacion[2] contiene el índice de la caché donde se encuentra el bloque almacenado  */
                             registros[cache[contadorFilas, ubicacion[2] * 4 + 3]] = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] * registros[cache[contadorFilas, ubicacion[2] * 4 + 2]];
                             break;
                         case "DDIV":
+                            /* Ubicacion[2] contiene el índice de la caché donde se encuentra el bloque almacenado  */
                             registros[cache[contadorFilas, ubicacion[2] * 4 + 3]] = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] / registros[cache[contadorFilas, ubicacion[2] * 4 + 2]];
                             break;
                         case "BEQZ":
-                            /* Se verifica la condición del salto */
+                            /* Se verifica la condición del salto: que el contenido del registro en la posición determinada por el número ubicado en
+                            cache[contadorFilas, ubicacion[2] * 4 + 1]  sea igual a 0 */
                             if(registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] == 0)
                             {
                                 /* Se multiplica la cantidad de instrucciones que debe retornarse por 4 debido a que una instrucción equivale a
@@ -343,7 +363,8 @@ namespace proyectoArqui
                             }
                             break;
                         case "BNEZ":
-                            /* Se verifica la condición del salto */
+                            /* Se verifica la condición del salto: que el contenido del registro en la posición determinada por el número ubicado en
+                            cache[contadorFilas, ubicacion[2] * 4 + 1] sea distinto de 0 */
                             if (registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] != 0)
                             {
                                 /* Se multiplica la cantidad de instrucciones que debe retornarse por 4 debido a que una instrucción equivale a
@@ -369,7 +390,7 @@ namespace proyectoArqui
                             en este punto el hilo principal aún no ha aumentado el valor del reloj. */
                             datosHilos[filaContextoActual, 3] = reloj+1;
 
-                            /* Se indica que un hilo ya no está en ejecucion */
+                            /* Se indica que el hilo especificado por la variable filaContextoActual ya no está en ejecucion */
                             ejecucionHilos[filaContextoActual, 1] = 1;
                             break;
                     }
@@ -381,16 +402,19 @@ namespace proyectoArqui
             }
         }
 
-        /*Método para arreglar un fallo de caché, cargando en caché*/
+        /*Método para arreglar un fallo de caché, cargando el bloque desde la memoria a caché */
         public void ejecutarFalloCache()
         {
-            /*Calcula la dirección fisica en memoria*/
+            /* Calcula la dirección fisica en memoria: se le resta 8, debido a que el conteo de bloques inicia en este número, con el fin
+            de obtener la posición en la que inicia el bloque */
             int numBloque = ubicacion[0] - 8;
+
+            /* Se multiplica por 16 porque cada bloque está compuesto de 16 bytes */
             int direccionFisica = numBloque * 16;
        
 
 
-            /*Carga en caché lo que está apuntando la dirección fisica */
+           /*Carga en caché lo que está apuntando la dirección fisica */
             for (int i = 0; i < 5; ++i)
             {
                 for (int c = 0; c < 4; c++)
@@ -404,8 +428,8 @@ namespace proyectoArqui
                     }
                     else
                     {
-                        /* Se carga la palabra de la memoria principal a la caché, en ubicacin[2] se tiene almacenado el índice (# de columna)
-                        de la caché donde se deben cargar las palabras */
+                        /* Se carga la palabra de la memoria principal a la caché, en ubicacin[2] se tiene almacenado el índice (# de columna*4)
+                        de la caché donde se deben cargar las palabras. Se multiplica por 4 porque cada palabra está compuesta de 4 bytes. */
                         cache[i, ubicacion[2] * 4 + c] = memoria[direccionFisica + c];
                     }
 
@@ -423,7 +447,7 @@ namespace proyectoArqui
             //Se aumenta el reloj
             ++reloj;
 
-            //La columna 3 del arreglo datosHilos[] simboliza la cantidad de ciclos, por lo que se aumenta dicha cantidad. 
+            //La columna 1 del arreglo datosHilos[] simboliza la cantidad de ciclos, por lo que se aumenta dicha cantidad. 
             ++datosHilos[filaContextoActual, 1];
         }
 
@@ -438,19 +462,23 @@ namespace proyectoArqui
         public void ejecutarInstrucciones() 
         { 
             
+            //Variable que sirve como contador para controlar que no se haya excedido el valor del quantum
             int contadorInstrucciones = 0;
+            
+            //Variable que se utiliza para recorrer el vector de registros 
             int contadorContexto = 0;
 
             while (hilosActivos > 0)
             {
 
+                //Se ejecuta el ciclo mientras el contador sea menor que el quantum y mientras la ejecucion del hilo actual no haya terminado
                 while (contadorInstrucciones < quantum  && ejecucionHilos[filaContextoActual, 1] == 0)
                 {
                     contadorInstrucciones++;
                     leerInstruccion();               
                 }
 
-                    //Se copia en el contexto los registros porque se acabó el quantum
+                    //Se copia en el contexto del hilo que se estaba ejecutando el valor de los registros porque se acabó el quantum
                     for (contadorContexto = 0; contadorContexto < columnasContexto - 1; ++contadorContexto)
                     {
                         contexto[filaContextoActual, contadorContexto] = registros[contadorContexto];
@@ -471,10 +499,13 @@ namespace proyectoArqui
                     //Se inicializa en 0 nuevamente el contador de instrucciones
                     contadorInstrucciones = 0;
 
-                    //Se verifica si la fila actual del contexto es la última, pues en caso de serlo, el siguiente
-                    //hilillo a ejecutar es el ubicado en la primer fila del contexto, sino se ejecuta el que se encuentra en la siguiente fila.
+                  
+                    //Se aumenta el valor del hilo ejecutandose actualmente
                     ++filaContextoActual;
 
+                    /* Se verifica si la fila actual del contexto es la última, pues en caso de serlo el valor de la búsqueda del hilo a ejecutar
+                    debe iniciar en 0. Se utiliza un ciclo que se lleva a cabo mientras el hilo actual ya haya terminado su ejecución y mientras
+                    este valor no exceda la cantidad de filas que posee el contexto. */
                     if (filaContextoActual == filasContexto)
                     {
                         filaContextoActual = 0;
@@ -510,7 +541,7 @@ namespace proyectoArqui
                         PC = contexto[filaContextoActual, columnasContexto - 1];
                     }
 
-                    /* Se realiza solo cuando el procesador posee más de un hilo */
+                    /* Se verifica que el valor del hilo a ejecutar sea uno válido, es decir, que sea menor que la cantidad de filas del contexto */
                     if (filaContextoActual < filasContexto)
                     {
                         //Se copia en los registros el contexto del hilo a ejecutar proximamente
@@ -529,8 +560,13 @@ namespace proyectoArqui
 
             }
             
+            //Se indica que el procesador ya no posee hilos activos
             terminarEjecucion = true;
+
+            //Se disminuye en 1 la cantidad de partipantes en la barrera de sincronización de instrucciones pues ya el procesador terminó su labor
             barreraFinInstr.RemoveParticipant();
+
+            //Se disminuye en 1 la cantidad de partipantes en la barrera de sincronización de cambio de reloj pues ya el procesador terminó su labor
             barreraCambioReloj_Ciclo.RemoveParticipant();
         }
     }
