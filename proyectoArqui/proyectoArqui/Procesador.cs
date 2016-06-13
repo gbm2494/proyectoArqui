@@ -11,6 +11,26 @@ namespace proyectoArqui
 
     class Procesador
     {
+        //Memoria compartida del procesador
+        private const int cantidadMC = 32;
+        int[] memoriaCompartida = new int[cantidadMC];
+
+        //caché de datos del procesador
+        private const int filasCacheDatos = 6;
+        private const int bloquesCache = 4;
+        int[,] cacheDatos = new int[filasCacheDatos,bloquesCache]; 
+
+        //directorio de bloques del procesador
+        private const int bloquesDirectorio = 8;
+        private const int columnasDirectorio = 5;
+        int[,] directorio = new int[bloquesDirectorio, columnasDirectorio];
+
+        //bandera de la instrucción LL
+        bool banderaLL = false;
+        int bloqueLL;
+       
+        int[] hilosRL;
+
         //variable para almacenar el quantum
         public int quantum = 0;
 
@@ -160,10 +180,15 @@ namespace proyectoArqui
             operaciones.Add(3, "JAL");
             operaciones.Add(2, "JR");
             operaciones.Add(63, "FIN");
+            operaciones.Add(50, "LL");
+            operaciones.Add(51, "SC");
+            operaciones.Add(35, "LW");
+            operaciones.Add(43, "SW");
 
             //La cantidad de filas del contexto corresponde a la cantidad de hilos que manejará el procesador
             filasContexto = numHilos;
             contexto = new int[filasContexto, columnasContexto];
+            hilosRL = new int[numHilos];
 
             /* La cantidad de filas del arreglo que almacena los datos que se desplegarán
             al finalizar el programa corresponde a la cantidad de hilos que manejará el procesador */
@@ -244,6 +269,12 @@ namespace proyectoArqui
                 {
                     ejecucionHilos[i, j] = 0;
                 }
+            }
+
+            //Se inicializa con 1s la memoria compartida del procesador
+            for (int i = 0; i < cantidadMC; i++)
+            {
+                memoriaCompartida[i] = 1;
             }
 
         }
@@ -381,7 +412,20 @@ namespace proyectoArqui
                         case "JR":
                             PC = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]];
                             break;
-                        case "FIN":
+
+                        case "LL":
+                            break;
+
+                        case "SC":
+                            break;
+
+                        case "LW":
+                            break;
+
+                        case "SW":
+                            break;
+
+                        default: //Instrucción de fin
 
                             /* Se disminuye la cantidad de hilos activos en el procesador */
                             --hilosActivos;
@@ -393,6 +437,7 @@ namespace proyectoArqui
                             /* Se indica que el hilo especificado por la variable filaContextoActual ya no está en ejecucion */
                             ejecucionHilos[filaContextoActual, 1] = 1;
                             break;
+
                     }
             }
 
