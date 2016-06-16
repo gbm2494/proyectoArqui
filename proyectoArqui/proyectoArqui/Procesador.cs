@@ -95,6 +95,13 @@ namespace proyectoArqui
         readonly int columnasEjecucionHilos = 2;
         public int[,] ejecucionHilos;
 
+
+        readonly int compartido = 0; //Compartido
+        readonly int modificado = 1; //Modificado
+        readonly int uncached = 2; //Uncached
+        readonly int invalido = 3; //Invalido
+
+
         /*Método para pruebas que imprime en el debugger la memoria del procesador*/
         public void imprimirMemoria() {
             for (int i = 0; i < cantidadMemoria; i++)
@@ -447,6 +454,45 @@ namespace proyectoArqui
             }
         }
 
+        public bool bloquearCachLe()
+        {
+            // Solicita bloquear la caché
+            if (Monitor.TryEnter(cacheDatos))
+            {
+                try
+                {
+                    //Se verifica si en la caché de datos se ubica el bloque leido
+                    if (cacheDatos[3, ubicacion[2]] == ubicacion[0])
+                    {
+                        //Se realiza la lectura. Hacerlo con metodo
+
+                    }
+                    else
+                    {
+                        //Se verifica si la posición a reemplazar posee un bloque modificado
+                        if (cacheDatos[4, ubicacion[2]] == modificado)
+                        {
+
+                        }
+                        else
+                        {
+
+                        }
+                    }
+                }
+                finally
+                {
+                    // Ensure that the lock is released.
+                    Monitor.Exit(cacheDatos);
+                }
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         /*Método para arreglar un fallo de caché, cargando el bloque desde la memoria a caché */
         public void ejecutarFalloCache()
         {
@@ -457,7 +503,6 @@ namespace proyectoArqui
             /* Se multiplica por 16 porque cada bloque está compuesto de 16 bytes */
             int direccionFisica = numBloque * 16;
        
-
 
            /*Carga en caché lo que está apuntando la dirección fisica */
             for (int i = 0; i < 5; ++i)
