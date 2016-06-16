@@ -13,17 +13,27 @@ namespace proyectoArqui
     {
         //Memoria compartida del procesador
         private const int cantidadMC = 32;
-        int[] memoriaCompartida = new int[cantidadMC];
+        public static int[] memoriaCompartida = new int[cantidadMC];
+    //    public static int[] memoriaCompartida1 = new int[cantidadMC];
+    //   public static int[] memoriaCompartida2 = new int[cantidadMC];
+    //    public static int[] memoriaCompartida3 = new int[cantidadMC];
 
         //caché de datos del procesador
         private const int filasCacheDatos = 6;
         private const int bloquesCache = 4;
-        int[,] cacheDatos = new int[filasCacheDatos,bloquesCache]; 
+        public int[,] cacheDatos = new int[filasCacheDatos, bloquesCache];
+
+      //  public static int[,] cacheDatos1 = new int[filasCacheDatos,bloquesCache];
+      //  public static int[,] cacheDatos2 = new int[filasCacheDatos, bloquesCache];
+      //  public static int[,] cacheDatos3 = new int[filasCacheDatos, bloquesCache]; 
 
         //directorio de bloques del procesador
         private const int bloquesDirectorio = 8;
         private const int columnasDirectorio = 5;
-        int[,] directorio = new int[bloquesDirectorio, columnasDirectorio];
+        public static int[,] directorio = new int[bloquesDirectorio, columnasDirectorio];
+    /*    public static int[,] directorio1 = new int[bloquesDirectorio, columnasDirectorio];
+        public static int[,] directorio2 = new int[bloquesDirectorio, columnasDirectorio];
+        public static int[,] directorio3 = new int[bloquesDirectorio, columnasDirectorio]; */
 
         //bandera de la instrucción LL
         bool banderaLL = false;
@@ -100,6 +110,9 @@ namespace proyectoArqui
         readonly int modificado = 1; //Modificado
         readonly int uncached = 2; //Uncached
         readonly int invalido = 3; //Invalido
+
+        public List<Procesador> procesadores = new List<Procesador>();
+
 
 
         /*Método para pruebas que imprime en el debugger la memoria del procesador*/
@@ -284,6 +297,28 @@ namespace proyectoArqui
                 memoriaCompartida[i] = 1;
             }
 
+
+            //Se inicializa con ceros la cache de datos, con -1 en la posición del bloque y con inválida en el estado del bloque
+            for (int contadorFilas = 0; contadorFilas < filasCacheDatos; ++contadorFilas)
+            {
+
+                for (int contadorColumnas = 0; contadorColumnas < bloquesCache; ++contadorColumnas)
+                {
+                    if (contadorFilas == filasCache - 1)
+                    {
+                        cacheDatos[contadorFilas, contadorColumnas] = invalido;
+                    }
+                    else if (contadorFilas == filasCache - 2)
+                    {
+                        cacheDatos[contadorFilas, contadorColumnas] = -1;
+                    }
+
+                    else /* Se inicializa en -1 la fila que corresponde al número del bloque guardado en caché */
+                    {
+                        cacheDatos[contadorFilas, contadorColumnas] = 0;
+                    }
+                }
+            }
         }
 
         /*Método para indicar en el arreglo el número del hilo así como el número del procesador donde correrá el hilo */
@@ -291,6 +326,118 @@ namespace proyectoArqui
         {
             datosHilos[numFila, 0] = numHilo;
             datosHilos[numFila, 4] = numProcesador;
+
+          /*  if (numHilo == 1)
+            {
+                //Se inicializa con 1s la memoria compartida del procesador 1
+                for (int i = 0; i < cantidadMC; i++)
+                {
+                    memoriaCompartida1[i] = 1;
+                }
+              
+            }
+            else if (numHilo == 2)
+            {
+                //Se inicializa con 1s la memoria compartida del procesador 2
+                for (int i = 0; i < cantidadMC; i++)
+                {
+                    memoriaCompartida2[i] = 1;
+                }
+            }
+            else
+            {
+                //Se inicializa con 1s la memoria compartida del procesador 3
+                for (int i = 0; i < cantidadMC; i++)
+                {
+                    memoriaCompartida3[i] = 1;
+                }
+            } */
+         
+        }
+
+        /*Método para inicializar la caché de datos de acuerdo al número del procesador ejecutándose */
+        //public void inicializarCacheDatos(int numHilo)
+        //{
+        //    if (numHilo == 1)
+        //    {
+        //        //Se inicializa con ceros la cache de datos, con -1 en la posición del bloque y con inválida en el estado del bloque
+        //        for (int contadorFilas = 0; contadorFilas < filasCacheDatos; ++contadorFilas)
+        //        {
+
+        //            for (int contadorColumnas = 0; contadorColumnas < bloquesCache; ++contadorColumnas)
+        //            {
+        //                if (contadorFilas == filasCache - 1)
+        //                {
+        //                    cacheDatos1[contadorFilas, contadorColumnas] = invalido;
+        //                }
+        //                else if (contadorFilas == filasCache - 2)
+        //                {
+        //                    cacheDatos1[contadorFilas, contadorColumnas] = -1;
+        //                }
+
+        //                else /* Se inicializa en -1 la fila que corresponde al número del bloque guardado en caché */
+        //                {
+        //                    cacheDatos1[contadorFilas, contadorColumnas] = 0;
+        //                }
+        //            }
+        //        }
+        //    }
+
+        //    else if (numHilo == 2)
+        //    {
+        //        //Se inicializa con ceros la cache de datos, con -1 en la posición del bloque y con inválida en el estado del bloque
+        //        for (int contadorFilas = 0; contadorFilas < filasCacheDatos; ++contadorFilas)
+        //        {
+
+        //            for (int contadorColumnas = 0; contadorColumnas < bloquesCache; ++contadorColumnas)
+        //            {
+        //                if (contadorFilas == filasCache - 1)
+        //                {
+        //                    cacheDatos2[contadorFilas, contadorColumnas] = invalido;
+        //                }
+        //                else if (contadorFilas == filasCache - 2)
+        //                {
+        //                    cacheDatos2[contadorFilas, contadorColumnas] = -1;
+        //                }
+
+        //                else /* Se inicializa en -1 la fila que corresponde al número del bloque guardado en caché */
+        //                {
+        //                    cacheDatos2[contadorFilas, contadorColumnas] = 0;
+        //                }
+        //            }
+        //        }
+        //    }
+
+        //    else 
+        //    {
+        //        //Se inicializa con ceros la cache de datos, con -1 en la posición del bloque y con inválida en el estado del bloque
+        //        for (int contadorFilas = 0; contadorFilas < filasCacheDatos; ++contadorFilas)
+        //        {
+
+        //            for (int contadorColumnas = 0; contadorColumnas < bloquesCache; ++contadorColumnas)
+        //            {
+        //                if (contadorFilas == filasCache - 1)
+        //                {
+        //                    cacheDatos3[contadorFilas, contadorColumnas] = invalido;
+        //                }
+        //                else if (contadorFilas == filasCache - 2)
+        //                {
+        //                    cacheDatos3[contadorFilas, contadorColumnas] = -1;
+        //                }
+
+        //                else /* Se inicializa en -1 la fila que corresponde al número del bloque guardado en caché */
+        //                {
+        //                    cacheDatos3[contadorFilas, contadorColumnas] = 0;
+        //                }
+        //            }
+        //        }
+        //    }
+              
+        //}
+
+        public void inicializarMemoriaCompartida(int numHilo)
+        {
+ 
         }
 
         /*Método para indicar en el arreglo el valor inicial del reloj al iniciar la ejecucion del hilo */
@@ -454,8 +601,9 @@ namespace proyectoArqui
             }
         }
 
-        public bool bloquearCachLe()
+        public bool bloquearCacheLW()
         {
+
             // Solicita bloquear la caché
             if (Monitor.TryEnter(cacheDatos))
             {
@@ -472,7 +620,37 @@ namespace proyectoArqui
                         //Se verifica si la posición a reemplazar posee un bloque modificado
                         if (cacheDatos[4, ubicacion[2]] == modificado)
                         {
+                            //El bloque pertenece al procesador 1
+                            if (cacheDatos[3, ubicacion[2]] <= 7)
+                            {
+                                if (datosHilos[0, 4] == 1) //Se está ejecutando el procesador 1
+                                {
+                                    if (Monitor.TryEnter(procesadores.ElementAt(0).cacheDatos))
+                                    {
+                                        try
+                                        {
 
+                                        }
+                                        finally
+                                        {
+
+                                        }
+                                    }
+                                }
+
+
+                           
+                            }
+                            //El bloque pertenece al procesador 2
+                            else if (cacheDatos[3, ubicacion[2]] > 7 && cacheDatos[3, ubicacion[2]] <= 15)
+                            {
+
+                            }
+                            //El bloque pertenece al procesador 3
+                            else
+                            {
+                                
+                            }
                         }
                         else
                         {

@@ -71,6 +71,16 @@ namespace proyectoArqui
                     procesador2 = new Procesador(cantidadHilos[1]);
                     procesador3 = new Procesador(cantidadHilos[2]);
 
+                    procesador1.procesadores.Add(procesador2);
+                    procesador1.procesadores.Add(procesador3);
+
+                    procesador2.procesadores.Add(procesador1);
+                    procesador2.procesadores.Add(procesador3);
+
+                    procesador3.procesadores.Add(procesador1);
+                    procesador3.procesadores.Add(procesador2);
+
+
                     //Indicación del valor del quantum de acuerdo a lo ingresado por el usuario
                     procesador1.quantum = quantum;
                     procesador2.quantum = quantum;
