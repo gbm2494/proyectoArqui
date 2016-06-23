@@ -746,9 +746,11 @@ namespace proyectoArqui
                             {
                                 if (solicitarDirectorioHit_BloqueCompartidoDiagrama4_SW(datosHilos[filaContextoActual, 4], 1, cacheDatos[4, ubicacion[2]], hit))
                                 {
+                                    //se realiza la escritura
                                 }
                                 else
                                 {
+                                    //volver a empezar
                                 }
 
                             }
@@ -756,18 +758,22 @@ namespace proyectoArqui
                             {
                                 if (solicitarDirectorioHit_BloqueCompartidoDiagrama4_SW(datosHilos[filaContextoActual, 4], 2, cacheDatos[4, ubicacion[2]] - 8, hit))
                                 {
+                                    //se realiza la escritura
                                 }
                                 else
                                 {
+                                    //volver a empezar
                                 }
                             }
                             else //El bloque pertenece al procesador 3
                             {
                                 if (solicitarDirectorioHit_BloqueCompartidoDiagrama4_SW(datosHilos[filaContextoActual, 4], 3, cacheDatos[4, ubicacion[2]] - 16, hit))
                                 {
+                                    //se realiza la escritura
                                 }
                                 else
                                 {
+                                    //volver a empezar
                                 }
                             }
 
@@ -777,9 +783,11 @@ namespace proyectoArqui
                             hit = false;
                             if (solicitarDirectorioFallo_SW(datosHilos[filaContextoActual, 4], 2, cacheDatos[4, ubicacion[2]] - 16, hit))
                             {
+                                //se realiza la escritura
                             }
                             else
                             {
+                                //volver a empezar
                             }
                         }
                     }
@@ -890,26 +898,14 @@ namespace proyectoArqui
             }
         }
 
-        public void invalidarBloqueDirectorio(int[,] dir, int numBloque)
-        {
-
-            for (int i = 2; i < columnasDirectorio; ++i)
-            {
-                if (dir[numBloque, i] == 1)
-                {
-                    dir[numBloque, i] = 0;
-                }
-            }
-        }
-
         /*Método que copia desde la memoria el contenido del bloque a la caché de datos */
         public void copiarBloqueDesdeMemoria(int[] memoria, int posicionMemoria)
         {
             //Copio en la caché de datos el bloque que se escribirá 
-            int contador = ubicacion[0] * 4;
+            int contador = posicionMemoria;
             for (int i = 0; i < 4; ++i)
             {
-                cacheDatos[i, ubicacion[2]] = memoriaCompartida[contador]; //SE COPIA DE LA MEMORIA COMPARTIDA??????
+                cacheDatos[i, ubicacion[2]] = memoria[contador]; //SE COPIA DE LA MEMORIA COMPARTIDA??????
                 ++contador;
             }
 
@@ -950,13 +946,6 @@ namespace proyectoArqui
                                     {
                                         ++contadorCaches;
 
-                                        if (i == numProcesadorLocal - 1) //El bloque que se encuentra compartido pertenece al directorio local
-                                        {
-                                            cacheDatos[5, ubicacion[2]] = invalido;
-                                            ++contadorCachesSolicitadas;
-                                        }
-                                        else
-                                        {
                                             //Se solicita la caché correspondiente para invalidar el bloque
                                             if (solicitarCacheExterna_BloqueCompartido_Diagrama4_SW(datosHilos[filaContextoActual, 4], i - 1))
                                             {
@@ -968,7 +957,7 @@ namespace proyectoArqui
                                             {
                                                 //SE TIENE QUE LIBERAR TODO E INICIAR DE NUEVO
                                             }
-                                        }
+                                        
                                     }
                                 }
 
@@ -976,22 +965,69 @@ namespace proyectoArqui
                                 if (contadorCaches == contadorCachesSolicitadas)
                                 {
 
+                                    //Se copia desde la memoria el contenido del bloque a la caché de datos
+                                    copiarBloqueDesdeMemoria(memoria, ubicacion[0]*4);
+
                                     //Se actualiza el estado del bloque en el directorio
                                     directorio[posicionBloque, 1] = modificado;
 
-                                    //Se actualiza el estado del bloque en la caché local
-                                    cacheDatos[5, ubicacion[2]] = modificado;
-
+                                    //Se actualiza la entrada del procesador que posee el bloque en el directorio
+                                    directorio[posicionBloque, numProcesadorLocal+1] = 1;
+                                   
                                     bloqueo = true;
 
                                     //Realizo la escritura
                                 }
                                 else
                                 {
-                                    //Se actualiza la entrada del procesador en el directorio 
-                                    directorio[posicionBloque, numProcesadorLocal] = 1;
+                                    bloqueo = false;
                                 }
 
+                            }
+                            else if (directorio[posicionBloque, 1] == modificado) //El bloque que se escribirá está modificado
+                            {
+                                if (ubicacion[0] <= 15) //El bloque se encuentra en el procesador 2
+                                {
+                                    if (solicitarCacheExterna_BloqueModificado_Diagrama3_SW(datosHilos[filaContextoActual, 4], 2, ubicacion[0], posicionBloque * 4, hit))
+                                    {
+                                        //Se invalida la entrada en el directorio del procesador que tenía el bloque
+                                        directorio[posicionBloque, 3] = 0;
+
+                                        //Se mantiene el estado del bloque 
+
+                                        //Se actualiza la entrada en el directorio del procesador que ahora tiene el bloque modificado
+                                        directorio[posicionBloque, 2] = 1;
+                                    }
+                                }
+                                else //El bloque se encuentra en el procesador 3
+                                {
+
+                                    if (solicitarCacheExterna_BloqueModificado_Diagrama3_SW(datosHilos[filaContextoActual, 4], 3, ubicacion[0], posicionBloque * 4, hit))
+                                    {
+                                        //Se invalida la entrada en el directorio del procesador que tenía el bloque
+                                        directorio[posicionBloque, 4] = 0;
+
+                                        //Se mantiene el estado del bloque 
+
+                                        //Se actualiza la entrada en el directorio del procesador que ahora tiene el bloque modificado
+                                        directorio[posicionBloque, numProcesadorLocal + 1] = 1;
+                                    }
+                                }
+                            }
+                            else //El bloque no se encuentra ni compartido ni modificado
+                            {
+                                //Se copia desde la memoria el contenido del bloque a la caché de datos
+                                copiarBloqueDesdeMemoria(memoria, ubicacion[0] * 4);
+
+                                //Se actualiza el estado del bloque en el directorio
+                                directorio[posicionBloque, 1] = modificado;
+
+                                //Se actualiza la entrada del procesador que posee el bloque en el directorio
+                                directorio[posicionBloque, numProcesadorLocal + 1] = 1;
+
+                                bloqueo = true;
+
+                                //Realizo la escritura
                             }
                         }
                         finally
@@ -2076,6 +2112,7 @@ namespace proyectoArqui
                                         if (i == numProcesadorLocal - 1) //El bloque que se encuentra compartido pertenece al directorio local
                                         {
                                             cacheDatos[5, ubicacion[2]] = invalido;
+                                            directorio[posicionBloque, i] = 0;
                                             ++contadorCachesSolicitadas;
                                         }
                                         else
@@ -2106,13 +2143,10 @@ namespace proyectoArqui
                                         cacheDatos[5, ubicacion[2]] = modificado;
 
                                         bloqueo = true;
-
-                                        //Realizo la escritura
                                 }
                                 else
                                 {
-                                    //Se actualiza la entrada del procesador en el directorio 
-                                    directorio[posicionBloque, numProcesadorLocal] = 1;
+                                    bloqueo = false;
                                 }
 
                             }
