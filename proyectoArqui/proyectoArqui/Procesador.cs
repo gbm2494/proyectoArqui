@@ -794,7 +794,7 @@ namespace proyectoArqui
                     //Se verifica si el bloque víctima está modificado o compartido
                     else if (cacheDatos[5, ubicacion[2]] == modificado || cacheDatos[5, ubicacion[2]] == compartido)
                     {
-                        if(cacheDatos[5, ubicacion[2]] == modificado)
+                        if (cacheDatos[5, ubicacion[2]] == modificado)
                         {
                             bloqueModificado = true;
                         }
@@ -802,12 +802,12 @@ namespace proyectoArqui
                         {
                             bloqueModificado = false;
                         }
-                        
+
                         //El bloque pertenece al procesador 1
                         if (cacheDatos[3, ubicacion[2]] <= 7)
                         {
                             //número de procesador, número de directorio, número de bloque
-                            if (solicitarDirectorioBloqueVictima_SW(datosHilos[filaContextoActual, 4], 1, cacheDatos[4, ubicacion[2]], bloqueModificado ))
+                            if (solicitarDirectorioBloqueVictima_SW(datosHilos[filaContextoActual, 4], 1, cacheDatos[4, ubicacion[2]], bloqueModificado))
                             {
 
 
@@ -946,18 +946,18 @@ namespace proyectoArqui
                                     {
                                         ++contadorCaches;
 
-                                            //Se solicita la caché correspondiente para invalidar el bloque
-                                            if (solicitarCacheExterna_BloqueCompartido_Diagrama4_SW(datosHilos[filaContextoActual, 4], i - 1))
-                                            {
-                                                //Se invalida la entrada del procesador que tenía el bloque en el directorio 
-                                                directorio[posicionBloque, i] = 0;
-                                                ++contadorCachesSolicitadas;
-                                            }
-                                            else
-                                            {
-                                                //SE TIENE QUE LIBERAR TODO E INICIAR DE NUEVO
-                                            }
-                                        
+                                        //Se solicita la caché correspondiente para invalidar el bloque
+                                        if (solicitarCacheExterna_BloqueCompartido_Diagrama4_SW(datosHilos[filaContextoActual, 4], i - 1))
+                                        {
+                                            //Se invalida la entrada del procesador que tenía el bloque en el directorio 
+                                            directorio[posicionBloque, i] = 0;
+                                            ++contadorCachesSolicitadas;
+                                        }
+                                        else
+                                        {
+                                            //SE TIENE QUE LIBERAR TODO E INICIAR DE NUEVO
+                                        }
+
                                     }
                                 }
 
@@ -966,14 +966,14 @@ namespace proyectoArqui
                                 {
 
                                     //Se copia desde la memoria el contenido del bloque a la caché de datos
-                                    copiarBloqueDesdeMemoria(memoria, ubicacion[0]*4);
+                                    copiarBloqueDesdeMemoria(memoria, ubicacion[0] * 4);
 
                                     //Se actualiza el estado del bloque en el directorio
                                     directorio[posicionBloque, 1] = modificado;
 
                                     //Se actualiza la entrada del procesador que posee el bloque en el directorio
-                                    directorio[posicionBloque, numProcesadorLocal+1] = 1;
-                                   
+                                    directorio[posicionBloque, numProcesadorLocal + 1] = 1;
+
                                     bloqueo = true;
 
                                     //Realizo la escritura
@@ -1314,6 +1314,197 @@ namespace proyectoArqui
             return bloqueo;
         }
 
+        /*Método para realizar la verificacion del estado del bloque en el directorio a subir a la caché de datos */
+        public bool verificarEstadoBloque_FalloCacheSW(int numProcesadorLocal, int[,] dir, int[] memCompartida, int posicionMemoriaCompartida, bool dirSolicitado)
+        {
+            bool bloqueo = false;
+            int posicionBloque = posicionMemoriaCompartida;
+            int[] datosBloqueModificado = new int[4];
+            int contador = 0;
+            bool hit = false;
+            int numBloque = 0;
+            int contadorCaches = 0;
+            int contadorCachesSolicitadas = 0;
+            int posicionProcesador = 0;
+
+            if(dirSolicitado)
+            {
+                bloqueo = true;
+                //Se verifica en el directorio si alguna caché lo tiene modificado
+                datosBloqueModificado = bloqueModificado(directorio, numBloque);
+
+                if (datosBloqueModificado[0] == 1) //Se verifica si el bloque se encuentra modificado
+                {
+                    hit = false;
+                    if (solicitarCacheExterna_BloqueModificado_Diagrama3_SW(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], hit))
+                    {
+                        //Se actualiza la entrada en el directorio correspondiente al procesador que tenía el bloque modificado
+                        dir[numBloque, datosBloqueModificado[2] + 1] = 0;
+
+                        //Se actualiza el estado del bloque en el directorio
+                        dir[numBloque, 1] = modificado;
+
+                        //Se actualiza la entrada en el directorio correspondiente al procesador que ahora posee el bloque
+                        dir[numBloque, numProcesadorLocal + 1] = 1;
+
+                        //Se realiza la lectura
+
+                    }
+                    else
+                    {
+                        bloqueo = false;
+                    }
+                }
+                else if (dir[numBloque, 1] == compartido) //Se verifica si alguna caché lo tiene compartido
+                {
+                    contadorCaches = 0;
+                    contadorCachesSolicitadas = 0;
+                    for (int i = 2; i < columnasDirectorio; ++i)
+                    {
+                        if (dir[numBloque, i] == 1)
+                        {
+                            ++contadorCaches;
+
+                            //Se solicita la caché correspondiente para invalidar el bloque
+                            if (solicitarCacheExterna_BloqueCompartido_Diagrama4_SW(datosHilos[filaContextoActual, 4], i - 1))
+                            {
+                                //Se invalida la entrada del procesador que tenía el bloque en el directorio 
+                                dir[numBloque, i] = 0;
+                                ++contadorCachesSolicitadas;
+                            }
+                            else
+                            {
+                                //SE TIENE QUE LIBERAR TODO E INICIAR DE NUEVO
+                            }
+                        }
+                    }
+
+                    //Se verifica que la cantidad de cachés que debían invalidarse realmente lo pudieron hacer
+                    if (contadorCaches == contadorCachesSolicitadas)
+                    {
+
+                        copiarBloqueDesdeMemoria(memCompartida, ubicacion[0] * 4);
+
+                        //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
+                        dir[numBloque, numProcesadorLocal + 1] = 1;
+
+                        //Se actualiza el estado del bloque en el directorio a modificado
+                        dir[numBloque, 1] = 1;
+
+                    }
+
+                }
+                else //Ninguna caché tenía el bloque modificado o compartido, se realiza la lectura del bloque desde la memoria
+                {
+                    copiarBloqueDesdeMemoria(memCompartida, ubicacion[0] * 4);
+
+                    //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
+                    dir[numBloque, numProcesadorLocal + 1] = 1;
+
+                    //Se actualiza el estado del bloque en el directorio a modificado
+                    dir[numBloque, 1] = modificado;
+                }
+            }
+            else
+            {
+                
+                if (Monitor.TryEnter(dir))
+                {
+                        try
+                        {
+                            bloqueo = true;
+                            //Se verifica en el directorio si alguna caché lo tiene modificado
+                            datosBloqueModificado = bloqueModificado(directorio, numBloque);
+
+                            if (datosBloqueModificado[0] == 1) //Se verifica si el bloque se encuentra modificado
+                            {
+                                hit = false;
+                                if (solicitarCacheExterna_BloqueModificado_Diagrama3_SW(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], hit))
+                                {
+                                    //Se actualiza la entrada en el directorio correspondiente al procesador que tenía el bloque modificado
+                                    dir[numBloque, datosBloqueModificado[2] + 1] = 0;
+
+                                    //Se actualiza el estado del bloque en el directorio
+                                    dir[numBloque, 1] = modificado;
+
+                                    //Se actualiza la entrada en el directorio correspondiente al procesador que ahora posee el bloque
+                                    dir[numBloque, numProcesadorLocal + 1] = 1;
+
+                                    //Se realiza la lectura
+
+                                }
+                                else
+                                {
+                                    bloqueo = false;
+                                }
+                            }
+                            else if (dir[numBloque, 1] == compartido) //Se verifica si alguna caché lo tiene compartido
+                            {
+                                contadorCaches = 0;
+                                contadorCachesSolicitadas = 0;
+                                for (int i = 2; i < columnasDirectorio; ++i)
+                                {
+                                    if (dir[numBloque, i] == 1)
+                                    {
+                                        ++contadorCaches;
+
+                                        //Se solicita la caché correspondiente para invalidar el bloque
+                                        if (solicitarCacheExterna_BloqueCompartido_Diagrama4_SW(datosHilos[filaContextoActual, 4], i - 1))
+                                        {
+                                            //Se invalida la entrada del procesador que tenía el bloque en el directorio 
+                                            dir[numBloque, i] = 0;
+                                            ++contadorCachesSolicitadas;
+                                        }
+                                        else
+                                        {
+                                            //SE TIENE QUE LIBERAR TODO E INICIAR DE NUEVO
+                                        }
+                                    }
+                                }
+
+                                //Se verifica que la cantidad de cachés que debían invalidarse realmente lo pudieron hacer
+                                if (contadorCaches == contadorCachesSolicitadas)
+                                {
+
+                                    copiarBloqueDesdeMemoria(memCompartida, ubicacion[0] * 4);
+
+                                    //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
+                                    dir[numBloque, numProcesadorLocal + 1] = 1;
+
+                                    //Se actualiza el estado del bloque en el directorio a modificado
+                                    dir[numBloque, 1] = 1;
+
+                                }
+
+                            }
+                            else //Ninguna caché tenía el bloque modificado o compartido, se realiza la lectura del bloque desde la memoria
+                            {
+                                copiarBloqueDesdeMemoria(memCompartida, ubicacion[0] * 4);
+
+                                //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
+                                dir[numBloque, numProcesadorLocal + 1] = 1;
+
+                                //Se actualiza el estado del bloque en el directorio a modificado
+                                dir[numBloque, 1] = modificado;
+                            }
+                        }
+                        finally
+                        {
+                            Monitor.Exit(procesadores.ElementAt(posicionProcesador).directorio);
+                        }
+                    }
+                    else
+                    {
+                        bloqueo = false;
+                    }
+            }
+
+
+            return bloqueo;
+         
+        }
+
+
         //Método para solicitar el directorio de un bloque víctima
         public bool solicitarDirectorioBloqueVictima_SW(int numProcesadorLocal, int numDirectorio, int posicionMemoriaCompartida, bool bloque_Modificado)
         {
@@ -1325,6 +1516,8 @@ namespace proyectoArqui
             int numBloque = 0;
             int contadorCaches = 0;
             int contadorCachesSolicitadas = 0;
+            int posicionProcesador = 0;
+            bool directorioSolicitado = false;
 
             if (numProcesadorLocal == 1) //Se está ejecutando el procesador 1
             {
@@ -1338,357 +1531,87 @@ namespace proyectoArqui
                             bloqueo = true;
 
                             if (bloque_Modificado) //El bloque víctima se encuentra modificado
-                             {
-                                 //Se obtiene los datos del bloque víctima modificado
-                                 datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                                 if (datosBloqueModificado[0] == 1) //Se verifica que realmente el bloque víctima se encuentra modificado de acuerdo al directorio
-                                 {
-                                     if (datosBloqueModificado[1] == numProcesadorLocal) //Se verifica si el bloque víctima pertenece al procesador local
-                                     {
-                                         //Se copia el contenido del bloque ubicado en la caché de datos a la memoria
-                                         contador = posicionMemoriaCompartida*4;
-                                         for (int i = 0; i < 4; ++i)
-                                         {
-                                             memoriaCompartida[contador] = cacheDatos[i, ubicacion[2]];
-                                         }
-
-                                         //Se invalida el estado del bloque en la caché de datos
-                                         cacheDatos[5, ubicacion[2]] = invalido;
-
-                                         //Se actualiza el estado del procesador que tenía el bloque víctima en el directorio
-                                         directorio[posicionBloque, numProcesadorLocal + 1] = 0;
-
-                                         //Se actualiza el estado del bloque en el directorio
-                                         directorio[posicionBloque, 1] = uncached;
-
-                                         //Se verifica si el bloque que se va a escribir se encuentra en el mismo directorio
-                                         numBloque = ubicacion[0];
-                                         if (numBloque <= 7) //El bloque que se escribirá pertenece al procesador 1
-                                         {
-                                             //Se verifica en el directorio si alguna caché lo tiene modificado
-                                             datosBloqueModificado = bloqueModificado(directorio, numBloque);
-                                           
-                                             if (datosBloqueModificado[0] == 1) //Se verifica si el bloque se encuentra modificado
-                                             {
-                                                 hit = false;
-                                                 if (solicitarCacheExterna_BloqueModificado_Diagrama3_SW(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], hit))
-                                                 {
-                                                     //Se actualiza la entrada en el directorio correspondiente al procesador que tenía el bloque modificado
-                                                     directorio[numBloque, datosBloqueModificado[2]+1] = 0;
-
-                                                     //Se actualiza el estado del bloque en el directorio
-                                                     directorio[numBloque, 1] = modificado;
-
-                                                     //Se actualiza la entrada en el directorio correspondiente al procesador que ahora posee el bloque
-                                                     directorio[numBloque, numProcesadorLocal + 1] = 1;
-
-                                                     //Se realiza la lectura
-
-                                                 }
-                                                 else
-                                                 {
-                                                     bloqueo = false;
-                                                 }
-                                             }
-                                             else if(directorio[numBloque, 1] == compartido) //Se verifica si alguna caché lo tiene compartido
-                                             {
-                                                contadorCaches = 0;
-                                                contadorCachesSolicitadas = 0;
-                                                for(int i = 2; i < columnasDirectorio; ++i)
-                                                {
-                                                    if(directorio[numBloque, i] == 1)
-                                                    {
-                                                        ++contadorCaches;
-
-                                                        //Se solicita la caché correspondiente para invalidar el bloque
-                                                        if (solicitarCacheExterna_BloqueCompartido_Diagrama4_SW(datosHilos[filaContextoActual, 4], i - 1))
-                                                        {
-                                                            //Se invalida la entrada del procesador que tenía el bloque en el directorio 
-                                                            directorio[numBloque, i] = 0;
-                                                            ++contadorCachesSolicitadas;
-                                                        }
-                                                        else
-                                                        {
-                                                            //SE TIENE QUE LIBERAR TODO E INICIAR DE NUEVO
-                                                        }                                  
-                                                    }
-                                                 }
-
-                                                 //Se verifica que la cantidad de cachés que debían invalidarse realmente lo pudieron hacer
-                                                 if(contadorCaches == contadorCachesSolicitadas)
-                                                 {
-
-                                                     copiarBloqueDesdeMemoria(memoriaCompartida, ubicacion[0]*4);
-
-                                                     //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
-                                                     directorio[numBloque, numProcesadorLocal + 1] = 1;
-
-                                                     //Se actualiza el estado del bloque en el directorio a modificado
-                                                     directorio[numBloque, 1] = 1;
-
-                                                 }              
-                                    
-                                         }
-                                         else //Ninguna caché tenía el bloque modificado o compartido, se realiza la lectura del bloque desde la memoria
-                                         {
-                                                   copiarBloqueDesdeMemoria(memoriaCompartida, ubicacion[0]*4);
-
-                                                  //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
-                                                  directorio[numBloque, numProcesadorLocal + 1] = 1;
-
-                                                  //Se actualiza el estado del bloque en el directorio a modificado
-                                                  directorio[numBloque, 1] = modificado;
-                                         }
-
-
-                                     }
-                                     else
-                                     {
-                                         //Se solicita la caché externa del bloque víctima
-                                         if (solicitarCacheExterna_BloqueModificado_Diagrama3_SW(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], hit))
-                                         {
-                                             //Se actualiza la entrada en el directorio correspondiente al estado del bloque
-                                             directorio[posicionBloque, 1] = uncached;
-
-                                             //Se actualiza la entrada en el directorio correspondiente al procesador que tenía el bloque modificado
-                                             directorio[posicionBloque, datosBloqueModificado[2]] = 0;
-
-                                             //Se verifica si el bloque que se va a escribir se encuentra en el mismo directorio
-                                             if (ubicacion[1] <= 7) //El bloque que se escribirá pertenece al procesador 1
-                                             {
-                                                 //Se verifica en el directorio si alguna caché lo tiene modificado
-                                                 datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                                                 if (datosBloqueModificado[0] == 1)
-                                                 {
-                                                     if (solicitarCacheExterna_BloqueModificado_Diagrama3_SW(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], hit))
-                                                     {
-                                                         //Se actualiza la entrada en el directorio correspondiente al procesador que tenía el bloque modificado
-                                                         directorio[posicionBloque, datosBloqueModificado[2]] = 0;
-
-                                                         //El estado del bloque se mantiene en modificado
-
-                                                         copiarBloqueDesdeMemoria(memoriaCompartida, ubicacion[0]*4);
-
-                                                         //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
-                                                         directorio[numBloque, numProcesadorLocal + 1] = 1;
-
-                                                         //Se actualiza el estado del bloque en el directorio a modificado
-                                                         directorio[numBloque, 1] = modificado;
-
-                                                         //Se realiza la lectura
-
-
-                                                     }
-                                                     else
-                                                     {
-                                                         bloqueo = false;
-                                                     }
-                                                 }
-                                             }
-
-
-
-                                         }
-                                         else
-                                         {
-                                             bloqueo = false;
-                                             //SE LIBERAN LAS COSAS
-                                         }
-                                     }
-
-
-                                 }
-                                 else
-                                 {
-
-                                 }
-                             }
-                             else //Bloque se encuentra compartido
-                             {
-                                 //Actualizo la entrada sobre el procesador que tenía el bloque compartido en el directorio
-                                 directorio[posicionBloque, numProcesadorLocal] = 0;
-
-                                 //En caso de que ninguna otra caché lo tenga compartido o modificado, entonces se pone en uncached
-                                 if (bloqueLibre(directorio, posicionBloque))
-                                 {
-                                     directorio[posicionBloque, 1] = uncached;
-                                 }
-
-                                 //Se verifica si el bloque que se va a escribir se encuentra en el mismo directorio
-                                 numBloque = ubicacion[0];
-                                 if (numBloque <= 7) //El bloque que se escribirá pertenece al procesador 1
-                                         {
-                                             //Se verifica en el directorio si alguna caché lo tiene modificado
-                                             datosBloqueModificado = bloqueModificado(directorio, numBloque);
-                                           
-                                             if (datosBloqueModificado[0] == 1)
-                                             {
-                                                 hit = false;
-                                                 if (solicitarCacheExterna_BloqueModificado_Diagrama3_SW(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], hit))
-                                                 {
-                                                     //Se actualiza la entrada en el directorio correspondiente al procesador que tenía el bloque modificado
-                                                     directorio[numBloque, datosBloqueModificado[2]+1] = 0;
-
-                                                     //Se actualiza el estado del bloque en el directorio
-                                                     directorio[numBloque, 1] = modificado;
-
-                                                     //Se actualiza la entrada en el directorio correspondiente al procesador que ahora posee el bloque
-                                                     directorio[numBloque, numProcesadorLocal + 1] = 1;
-
-                                                     //Se realiza la lectura
-
-                                                 }
-                                                 else
-                                                 {
-                                                     bloqueo = false;
-                                                 }
-                                             }
-                                             else if(directorio[numBloque, 1] == compartido) //Se verifica si alguna caché lo tiene compartido
-                                             {
-                                                contadorCaches = 0;
-                                                contadorCachesSolicitadas = 0;
-                                                for(int i = 2; i < columnasDirectorio; ++i)
-                                                {
-                                                    if(directorio[numBloque, i] == 1)
-                                                    {
-                                                        ++contadorCaches;
-
-                                                        //Se solicita la caché correspondiente para invalidar el bloque
-                                                        if (solicitarCacheExterna_BloqueCompartido_Diagrama4_SW(datosHilos[filaContextoActual, 4], i - 1))
-                                                        {
-                                                            //Se invalida la entrada del procesador que tenía el bloque en el directorio 
-                                                            directorio[numBloque, i] = 0;
-                                                            ++contadorCachesSolicitadas;
-                                                        }
-                                                        else
-                                                        {
-                                                            //SE TIENE QUE LIBERAR TODO E INICIAR DE NUEVO
-                                                        }                                  
-                                                    }
-                                                 }
-
-                                                 //Se verifica que la cantidad de cachés que debían invalidarse realmente lo pudieron hacer
-                                                 if(contadorCaches == contadorCachesSolicitadas)
-                                                 {
-
-                                                     copiarBloqueDesdeMemoria(memoriaCompartida, ubicacion[0]*4);
-
-                                                     //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
-                                                     directorio[numBloque, numProcesadorLocal + 1] = 1;
-
-                                                     //Se actualiza el estado del bloque en el directorio a modificado
-                                                     directorio[numBloque, 1] = modificado;
-
-                                                 }              
-                                    
-                                         }
-                                         else //Ninguna caché tenía el bloque modificado o compartido, se realiza la lectura del bloque desde la memoria
-                                         {
-                                                  copiarBloqueDesdeMemoria(memoriaCompartida, ubicacion[0]*4);
-
-                                                  //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
-                                                  directorio[numBloque, numProcesadorLocal + 1] = 1;
-
-                                                  //Se actualiza el estado del bloque en el directorio a modificado
-                                                  directorio[numBloque, 1] = modificado;
-                                         }
-
-
-                                     }
-                                     else
-                                     {
-                                         //Se solicita la caché externa del bloque víctima
-                                         if (solicitarCacheExterna_BloqueModificado_Diagrama3_SW(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], hit))
-                                         {
-                                             //Se actualiza la entrada en el directorio correspondiente al estado del bloque
-                                             directorio[posicionBloque, 1] = uncached;
-
-                                             //Se actualiza la entrada en el directorio correspondiente al procesador que tenía el bloque modificado
-                                             directorio[posicionBloque, datosBloqueModificado[2]] = 0;
-
-                                             //Se verifica si el bloque que se va a escribir se encuentra en el mismo directorio
-                                             if (ubicacion[1] <= 7) //El bloque que se escribirá pertenece al procesador 1
-                                             {
-                                                 //Se verifica en el directorio si alguna caché lo tiene modificado
-                                                 datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                                                 if (datosBloqueModificado[0] == 1)
-                                                 {
-                                                     if (solicitarCacheExterna_BloqueModificado_Diagrama3_SW(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], hit))
-                                                     {
-                                                         //Se actualiza la entrada en el directorio correspondiente al procesador que tenía el bloque modificado
-                                                         directorio[posicionBloque, datosBloqueModificado[2]] = 0;
-
-                                                         //El estado del bloque se mantiene en modificado
-
-                                                         copiarBloqueDesdeMemoria(memoriaCompartida, ubicacion[0]*4);
-
-                                                         //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
-                                                         directorio[numBloque, numProcesadorLocal + 1] = 1;
-
-                                                         //Se actualiza el estado del bloque en el directorio a modificado
-                                                         directorio[numBloque, 1] = 1;
-
-                                                         //Se realiza la lectura
-
-
-                                                     }
-                                                     else
-                                                     {
-                                                         bloqueo = false;
-                                                     }
-                                                 }
-                                             }
-
-
-
-                                         }
-                                         else
-                                         {
-                                             bloqueo = false;
-                                             //SE LIBERAN LAS COSAS
-                                         }
-                                     }
-
-                                 
-                                 }
-                            
-                                 
-                          
-                             }
-
-
-
-
-
-
-                            //---------------------------------------------
-
-                            //Verifico si alguna caché lo tiene modificado
-                            datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                            if (datosBloqueModificado[0] == 1)
                             {
-                                //Se solicita la caché externa
-                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], 1))
+                                //Se obtiene los datos del bloque víctima modificado
+                                datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
+                                if (datosBloqueModificado[0] == 1) //Se verifica que realmente el bloque víctima se encuentra modificado de acuerdo al directorio
                                 {
+                                    //Se copia el contenido del bloque ubicado en la caché de datos a la memoria
+                                    contador = posicionMemoriaCompartida * 4;
+                                    for (int i = 0; i < 4; ++i)
+                                    {
+                                        memoriaCompartida[contador] = cacheDatos[i, ubicacion[2]];
+                                    }
 
+                                    //Se invalida el estado del bloque en la caché de datos
+                                    cacheDatos[5, ubicacion[2]] = invalido;
+
+                                    //Se actualiza el estado del procesador que tenía el bloque víctima en el directorio
+                                    directorio[posicionBloque, numProcesadorLocal + 1] = 0;
+
+                                    //Se actualiza el estado del bloque en el directorio
+                                    directorio[posicionBloque, 1] = uncached;
+                                }
+                            }
+                            else //Bloque víctima se encuentra compartido
+                            {
+                                //Actualizo la entrada sobre el procesador que tenía el bloque compartido en el directorio
+                                directorio[posicionBloque, numProcesadorLocal] = 0;
+
+                                //En caso de que ninguna otra caché lo tenga compartido o modificado, entonces se pone en uncached
+                                if (bloqueLibre(directorio, posicionBloque))
+                                {
+                                    directorio[posicionBloque, 1] = uncached;
+                                }
+
+                                //Se invalida el estado del bloque víctima en la caché de datos
+                                cacheDatos[5, ubicacion[2]] = invalido;
+                            }
+
+                            numBloque = ubicacion[0];
+
+                            //Se verifica si el bloque que se va a escribir se encuentra en el mismo directorio
+                            if (numBloque <= 7) //El bloque que se escribirá pertenece al procesador 1
+                            {
+                                directorioSolicitado = true;
+                                if(verificarEstadoBloque_FalloCacheSW(numProcesadorLocal, directorio, memoriaCompartida, posicionMemoriaCompartida, directorioSolicitado))
+                                {
+                                    bloqueo = true;
                                 }
                                 else
                                 {
-                                    //SE LIBERAN LAS COSAS
+                                    bloqueo = false;
                                 }
+
                             }
-                            else
+                            else  //Bloque a escribir pertenece al segundo o al tercer procesador
                             {
-                                //Copio desde la memoria el bloque
-                                for (int i = 0; i < 4; ++i)
+                                if (numBloque <= 15) //El bloque a escribir pertenece al segundo procesador
                                 {
-                                    memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[i, ubicacion[2]];
-                                    ++posicionMemoriaCompartida;
+                                    posicionProcesador = 0;
+                                    numBloque = numBloque - 8;
+  
+                                }
+                                else //El bloque a escribir pertenece al tercer procesador
+                                {
+                                    posicionProcesador = 1;
+                                    numBloque = numBloque - 16;
                                 }
 
+                                directorioSolicitado = false;
+                                if(verificarEstadoBloque_FalloCacheSW(numProcesadorLocal, directorio, memoriaCompartida, posicionMemoriaCompartida, directorioSolicitado))
+                                {
+                                    bloqueo = true;
+                                }
+                                else
+                                {
+                                    bloqueo = false;
+                                }
 
                             }
+
                         }
+
                         finally
                         {
                             Monitor.Exit(directorio);
@@ -1699,97 +1622,337 @@ namespace proyectoArqui
                         bloqueo = false;
                     }
                 }
-                else if (numDirectorio == 2)
+                else //El procesador local es el 1 y el directorio solicitado es el 2 o el 3
                 {
-                    if (Monitor.TryEnter(procesadores.ElementAt(0).directorio))
+                    if (Monitor.TryEnter(procesadores.ElementAt(numDirectorio-2).directorio))
                     {
                         try
                         {
                             bloqueo = true;
 
-
-                            //Verifico si alguna caché lo tiene modificado
-                            datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                            if (datosBloqueModificado[0] == 1)
+                            if (bloque_Modificado) //El bloque víctima se encuentra modificado
                             {
-                                //Se solicita la caché externa
-                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], 1))
+                                //Se obtiene los datos del bloque víctima modificado
+                                datosBloqueModificado = bloqueModificado(procesadores.ElementAt(numDirectorio-2).directorio, posicionBloque);
+                                if (datosBloqueModificado[0] == 1) //Se verifica que realmente el bloque víctima se encuentra modificado de acuerdo al directorio
                                 {
+                                    //Se copia el contenido del bloque ubicado en la caché de datos a la memoria
+                                    contador = posicionMemoriaCompartida * 4;
+                                    for (int i = 0; i < 4; ++i)
+                                    {
+                                        procesadores.ElementAt(numDirectorio-2).memoriaCompartida[contador] = cacheDatos[i, ubicacion[2]];
+                                    }
 
-                                }
-                                else
-                                {
-                                    //SE LIBERAN LAS COSAS
+                                    //Se invalida el estado del bloque en la caché de datos
+                                    cacheDatos[5, ubicacion[2]] = invalido;
+
+                                    //Se actualiza el estado del procesador que tenía el bloque víctima en el directorio
+                                    procesadores.ElementAt(numDirectorio-2).directorio[posicionBloque, numProcesadorLocal + 1] = 0;
+
+                                    //Se actualiza el estado del bloque en el directorio
+                                    procesadores.ElementAt(numDirectorio-2).directorio[posicionBloque, 1] = uncached;
                                 }
                             }
-                            else
+                            else //Bloque víctima se encuentra compartido
                             {
-                                //Copio desde la memoria el bloque
-                                for (int i = 0; i < 4; ++i)
+                                //Actualizo la entrada sobre el procesador que tenía el bloque compartido en el directorio
+                                procesadores.ElementAt(numDirectorio-2).directorio[posicionBloque, numProcesadorLocal] = 0;
+
+                                //En caso de que ninguna otra caché lo tenga compartido o modificado, entonces se pone en uncached
+                                if (bloqueLibre(procesadores.ElementAt(numDirectorio-2).directorio, posicionBloque))
                                 {
-                                    procesadores.ElementAt(0).memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[i, ubicacion[2]];
-                                    ++posicionMemoriaCompartida;
+                                    procesadores.ElementAt(numDirectorio-2).directorio[posicionBloque, 1] = uncached;
+                                }
+
+                                //Se invalida el estado del bloque víctima en la caché de datos
+                                cacheDatos[5, ubicacion[2]] = invalido;
+                             }
+
+                            numBloque = ubicacion[0];
+
+                            //Se verifica si el bloque que se va a escribir se encuentra en el mismo directorio
+                            if (numBloque <= 7) //El bloque que se escribirá pertenece al procesador 1
+                            {
+
+                                 if (Monitor.TryEnter(directorio))
+                                 {
+                                    try
+                                    {
+                                        bloqueo = true;
+
+                                        
+
+                                        //Se verifica en el directorio si alguna caché lo tiene modificado
+                                        datosBloqueModificado = bloqueModificado(directorio, numBloque);
+
+                                        if (datosBloqueModificado[0] == 1) //Se verifica si el bloque se encuentra modificado
+                                        {
+                                            hit = false;
+                                            if (solicitarCacheExterna_BloqueModificado_Diagrama3_SW(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], hit))
+                                            {
+                                                //Se actualiza la entrada en el directorio correspondiente al procesador que tenía el bloque modificado
+                                                directorio[numBloque, datosBloqueModificado[2] + 1] = 0;
+
+                                                //Se actualiza el estado del bloque en el directorio
+                                                directorio[numBloque, 1] = modificado;
+
+                                                //Se actualiza la entrada en el directorio correspondiente al procesador que ahora posee el bloque
+                                                directorio[numBloque, numProcesadorLocal + 1] = 1;
+
+                                                //Se realiza la lectura
+
+                                            }
+                                            else
+                                            {
+                                                bloqueo = false;
+                                            }
+                                        }
+
+                                        
+                                        else if (directorio[numBloque, 1] == compartido) //Se verifica si alguna caché lo tiene compartido
+                                        {
+                                            contadorCaches = 0;
+                                            contadorCachesSolicitadas = 0;
+                                            for (int i = 2; i < columnasDirectorio; ++i)
+                                            {
+                                                if (directorio[numBloque, i] == 1)
+                                                {
+                                                    ++contadorCaches;
+
+                                                    //Se solicita la caché correspondiente para invalidar el bloque
+                                                    if (solicitarCacheExterna_BloqueCompartido_Diagrama4_SW(datosHilos[filaContextoActual, 4], i - 1))
+                                                    {
+                                                        //Se invalida la entrada del procesador que tenía el bloque en el directorio 
+                                                        directorio[numBloque, i] = 0;
+                                                        ++contadorCachesSolicitadas;
+                                                    }
+                                                    else
+                                                    {
+                                                        //SE TIENE QUE LIBERAR TODO E INICIAR DE NUEVO
+                                                    }
+                                                }
+                                            }
+
+                                            //Se verifica que la cantidad de cachés que debían invalidarse realmente lo pudieron hacer
+                                            if (contadorCaches == contadorCachesSolicitadas)
+                                            {
+
+                                                copiarBloqueDesdeMemoria(memoriaCompartida, ubicacion[0] * 4);
+
+                                                //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
+                                                directorio[numBloque, numProcesadorLocal + 1] = 1;
+
+                                                //Se actualiza el estado del bloque en el directorio a modificado
+                                                directorio[numBloque, 1] = 1;
+
+                                            }
+
+                                        }
+                                        else //Ninguna caché tenía el bloque modificado o compartido, se realiza la lectura del bloque desde la memoria
+                                        {
+                                            copiarBloqueDesdeMemoria(memoriaCompartida, ubicacion[0] * 4);
+
+                                            //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
+                                            directorio[numBloque, numProcesadorLocal + 1] = 1;
+
+                                            //Se actualiza el estado del bloque en el directorio a modificado
+                                            directorio[numBloque, 1] = modificado;
+                                        }
+                                    }
+                                    finally
+                                    {
+                                        Monitor.Exit(directorio);
+                                    }
+                                 }
+                                 else
+                                 {
+                                     bloqueo = false;
+                                 }
+
+                            }
+                            else  //Bloque a escribir pertenece al segundo o al tercer procesador
+                            {
+                                if (numBloque <= 15) //El bloque a escribir pertenece al segundo procesador
+                                {
+                                   
+
+                                     //Se verifica en el directorio si alguna caché lo tiene modificado
+                                        datosBloqueModificado = bloqueModificado(directorio, numBloque);
+
+                                        if (datosBloqueModificado[0] == 1) //Se verifica si el bloque se encuentra modificado
+                                        {
+                                            hit = false;
+                                            if (solicitarCacheExterna_BloqueModificado_Diagrama3_SW(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], hit))
+                                            {
+                                                //Se actualiza la entrada en el directorio correspondiente al procesador que tenía el bloque modificado
+                                                directorio[numBloque, datosBloqueModificado[2] + 1] = 0;
+
+                                                //Se actualiza el estado del bloque en el directorio
+                                                directorio[numBloque, 1] = modificado;
+
+                                                //Se actualiza la entrada en el directorio correspondiente al procesador que ahora posee el bloque
+                                                directorio[numBloque, numProcesadorLocal + 1] = 1;
+
+                                                //Se realiza la lectura
+
+                                            }
+                                            else
+                                            {
+                                                bloqueo = false;
+                                            }
+                                        }
+
+                                        
+                                        else if (directorio[numBloque, 1] == compartido) //Se verifica si alguna caché lo tiene compartido
+                                        {
+                                            contadorCaches = 0;
+                                            contadorCachesSolicitadas = 0;
+                                            for (int i = 2; i < columnasDirectorio; ++i)
+                                            {
+                                                if (directorio[numBloque, i] == 1)
+                                                {
+                                                    ++contadorCaches;
+
+                                                    //Se solicita la caché correspondiente para invalidar el bloque
+                                                    if (solicitarCacheExterna_BloqueCompartido_Diagrama4_SW(datosHilos[filaContextoActual, 4], i - 1))
+                                                    {
+                                                        //Se invalida la entrada del procesador que tenía el bloque en el directorio 
+                                                        directorio[numBloque, i] = 0;
+                                                        ++contadorCachesSolicitadas;
+                                                    }
+                                                    else
+                                                    {
+                                                        //SE TIENE QUE LIBERAR TODO E INICIAR DE NUEVO
+                                                    }
+                                                }
+                                            }
+
+                                            //Se verifica que la cantidad de cachés que debían invalidarse realmente lo pudieron hacer
+                                            if (contadorCaches == contadorCachesSolicitadas)
+                                            {
+
+                                                copiarBloqueDesdeMemoria(memoriaCompartida, ubicacion[0] * 4);
+
+                                                //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
+                                                directorio[numBloque, numProcesadorLocal + 1] = 1;
+
+                                                //Se actualiza el estado del bloque en el directorio a modificado
+                                                directorio[numBloque, 1] = 1;
+
+                                            }
+
+                                        }
+                                        else //Ninguna caché tenía el bloque modificado o compartido, se realiza la lectura del bloque desde la memoria
+                                        {
+                                            copiarBloqueDesdeMemoria(memoriaCompartida, ubicacion[0] * 4);
+
+                                            //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
+                                            directorio[numBloque, numProcesadorLocal + 1] = 1;
+
+                                            //Se actualiza el estado del bloque en el directorio a modificado
+                                            directorio[numBloque, 1] = modificado;
+                                        }
+
+
+
+
+
+
+                                }
+                                else //El bloque a escribir pertenece al tercer procesador
+                                {
+                                    
                                 }
 
 
+                                //Se verifica en el directorio si alguna caché lo tiene modificado
+                                datosBloqueModificado = bloqueModificado(procesadores.ElementAt(posicionProcesador).directorio, numBloque);
+
+                                if (datosBloqueModificado[0] == 1) //Se verifica si el bloque se encuentra modificado
+                                {
+                                    hit = false;
+                                    if (solicitarCacheExterna_BloqueModificado_Diagrama3_SW(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], hit))
+                                    {
+                                        //Se actualiza la entrada en el directorio correspondiente al procesador que tenía el bloque modificado
+                                        procesadores.ElementAt(posicionProcesador).directorio[numBloque, datosBloqueModificado[2] + 1] = 0;
+
+                                        //Se actualiza el estado del bloque en el directorio
+                                        procesadores.ElementAt(posicionProcesador).directorio[numBloque, 1] = modificado;
+
+                                        //Se actualiza la entrada en el directorio correspondiente al procesador que ahora posee el bloque
+                                        procesadores.ElementAt(posicionProcesador).directorio[numBloque, numProcesadorLocal + 1] = 1;
+
+                                        //Se realiza la lectura
+
+                                    }
+                                    else
+                                    {
+                                        bloqueo = false;
+                                    }
+                                }
+                                else if (procesadores.ElementAt(posicionProcesador).directorio[numBloque, 1] == compartido) //Se verifica si alguna caché lo tiene compartido
+                                {
+                                    contadorCaches = 0;
+                                    contadorCachesSolicitadas = 0;
+                                    for (int i = 2; i < columnasDirectorio; ++i)
+                                    {
+                                        if (procesadores.ElementAt(posicionProcesador).directorio[numBloque, i] == 1)
+                                        {
+                                            ++contadorCaches;
+
+                                            //Se solicita la caché correspondiente para invalidar el bloque
+                                            if (solicitarCacheExterna_BloqueCompartido_Diagrama4_SW(datosHilos[filaContextoActual, 4], i - 1))
+                                            {
+                                                //Se invalida la entrada del procesador que tenía el bloque en el directorio 
+                                                procesadores.ElementAt(posicionProcesador).directorio[numBloque, i] = 0;
+                                                ++contadorCachesSolicitadas;
+                                            }
+                                            else
+                                            {
+                                                //SE TIENE QUE LIBERAR TODO E INICIAR DE NUEVO
+                                            }
+                                        }
+                                    }
+
+                                    //Se verifica que la cantidad de cachés que debían invalidarse realmente lo pudieron hacer
+                                    if (contadorCaches == contadorCachesSolicitadas)
+                                    {
+
+                                        copiarBloqueDesdeMemoria(procesadores.ElementAt(posicionProcesador).memoriaCompartida, numBloque * 4);
+
+                                        //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
+                                        procesadores.ElementAt(posicionProcesador).directorio[numBloque, numProcesadorLocal + 1] = 1;
+
+                                        //Se actualiza el estado del bloque en el directorio a modificado
+                                        procesadores.ElementAt(posicionProcesador).directorio[numBloque, 1] = 1;
+
+                                    }
+
+                                }
+                                else //Ninguna caché tenía el bloque modificado o compartido, se realiza la lectura del bloque desde la memoria
+                                {
+                                    copiarBloqueDesdeMemoria(procesadores.ElementAt(posicionProcesador).memoriaCompartida, numBloque * 4);
+
+                                    //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
+                                    procesadores.ElementAt(posicionProcesador).directorio[numBloque, numProcesadorLocal + 1] = 1;
+
+                                    //Se actualiza el estado del bloque en el directorio a modificado
+                                    procesadores.ElementAt(posicionProcesador).directorio[numBloque, 1] = modificado;
+                                }
                             }
+
                         }
+
                         finally
                         {
-                            Monitor.Exit(procesadores.ElementAt(0).directorio);
+                            Monitor.Exit(directorio);
                         }
                     }
                     else
                     {
                         bloqueo = false;
                     }
-                }
-                else
-                {
-                    if (Monitor.TryEnter(procesadores.ElementAt(1).directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
 
-
-                            //Verifico si alguna caché lo tiene modificado
-                            datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                            if (datosBloqueModificado[0] == 1)
-                            {
-                                //Se solicita la caché externa
-                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], 1))
-                                {
-
-                                }
-                                else
-                                {
-                                    //SE LIBERAN LAS COSAS
-                                }
-                            }
-                            else
-                            {
-                                //Copio desde la memoria el bloque
-                                for (int i = 0; i < 4; ++i)
-                                {
-                                    procesadores.ElementAt(1).memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[i, ubicacion[2]];
-                                    ++posicionMemoriaCompartida;
-                                }
-
-
-                            }
-                        }
-                        finally
-                        {
-                            Monitor.Exit(procesadores.ElementAt(1).directorio);
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
-
-                }
             }
             else if (numProcesadorLocal == 2) //Se está ejecutando el procesador 2
             {
@@ -2135,14 +2298,14 @@ namespace proyectoArqui
                                 //Se verifica que la cantidad de cachés que debían invalidarse realmente lo pudieron hacer
                                 if (contadorCaches == contadorCachesSolicitadas)
                                 {
-                                
-                                        //Se actualiza el estado del bloque en el directorio
-                                        directorio[posicionBloque, 1] = modificado;
 
-                                        //Se actualiza el estado del bloque en la caché local
-                                        cacheDatos[5, ubicacion[2]] = modificado;
+                                    //Se actualiza el estado del bloque en el directorio
+                                    directorio[posicionBloque, 1] = modificado;
 
-                                        bloqueo = true;
+                                    //Se actualiza el estado del bloque en la caché local
+                                    cacheDatos[5, ubicacion[2]] = modificado;
+
+                                    bloqueo = true;
                                 }
                                 else
                                 {
