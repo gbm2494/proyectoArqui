@@ -360,86 +360,6 @@ namespace proyectoArqui
 
         }
 
-        /*Método para inicializar la caché de datos de acuerdo al número del procesador ejecutándose */
-        //public void inicializarCacheDatos(int numHilo)
-        //{
-        //    if (numHilo == 1)
-        //    {
-        //        //Se inicializa con ceros la cache de datos, con -1 en la posición del bloque y con inválida en el estado del bloque
-        //        for (int contadorFilas = 0; contadorFilas < filasCacheDatos; ++contadorFilas)
-        //        {
-
-        //            for (int contadorColumnas = 0; contadorColumnas < bloquesCache; ++contadorColumnas)
-        //            {
-        //                if (contadorFilas == filasCache - 1)
-        //                {
-        //                    cacheDatos1[contadorFilas, contadorColumnas] = invalido;
-        //                }
-        //                else if (contadorFilas == filasCache - 2)
-        //                {
-        //                    cacheDatos1[contadorFilas, contadorColumnas] = -1;
-        //                }
-
-        //                else /* Se inicializa en -1 la fila que corresponde al número del bloque guardado en caché */
-        //                {
-        //                    cacheDatos1[contadorFilas, contadorColumnas] = 0;
-        //                }
-        //            }
-        //        }
-        //    }
-
-        //    else if (numHilo == 2)
-        //    {
-        //        //Se inicializa con ceros la cache de datos, con -1 en la posición del bloque y con inválida en el estado del bloque
-        //        for (int contadorFilas = 0; contadorFilas < filasCacheDatos; ++contadorFilas)
-        //        {
-
-        //            for (int contadorColumnas = 0; contadorColumnas < bloquesCache; ++contadorColumnas)
-        //            {
-        //                if (contadorFilas == filasCache - 1)
-        //                {
-        //                    cacheDatos2[contadorFilas, contadorColumnas] = invalido;
-        //                }
-        //                else if (contadorFilas == filasCache - 2)
-        //                {
-        //                    cacheDatos2[contadorFilas, contadorColumnas] = -1;
-        //                }
-
-        //                else /* Se inicializa en -1 la fila que corresponde al número del bloque guardado en caché */
-        //                {
-        //                    cacheDatos2[contadorFilas, contadorColumnas] = 0;
-        //                }
-        //            }
-        //        }
-        //    }
-
-        //    else 
-        //    {
-        //        //Se inicializa con ceros la cache de datos, con -1 en la posición del bloque y con inválida en el estado del bloque
-        //        for (int contadorFilas = 0; contadorFilas < filasCacheDatos; ++contadorFilas)
-        //        {
-
-        //            for (int contadorColumnas = 0; contadorColumnas < bloquesCache; ++contadorColumnas)
-        //            {
-        //                if (contadorFilas == filasCache - 1)
-        //                {
-        //                    cacheDatos3[contadorFilas, contadorColumnas] = invalido;
-        //                }
-        //                else if (contadorFilas == filasCache - 2)
-        //                {
-        //                    cacheDatos3[contadorFilas, contadorColumnas] = -1;
-        //                }
-
-        //                else /* Se inicializa en -1 la fila que corresponde al número del bloque guardado en caché */
-        //                {
-        //                    cacheDatos3[contadorFilas, contadorColumnas] = 0;
-        //                }
-        //            }
-        //        }
-        //    }
-
-        //}
-
         public void inicializarMemoriaCompartida(int numHilo)
         {
 
@@ -518,6 +438,7 @@ namespace proyectoArqui
 
             if (operaciones.TryGetValue(codigoOperacion, out operando))
             {
+                int direccionMemoria = 0;
                 switch (operando)
                 {
                     case "DADDI":
@@ -581,9 +502,30 @@ namespace proyectoArqui
                         break;
 
                     case "LW":
+                        direccionMemoria = 0;                       
+                        //Se calcula la direccion de memoria
+                        direccionMemoria = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] + cache[contadorFilas, ubicacion[2] * 4 + 3];
+                        while (bloquearCacheLW(direccionMemoria, cache[contadorFilas, ubicacion[2] * 4 + 2]) == false)
+                        {
+                            //Aumentar ciclos
+                        }
+                        PC = PC + cache[contadorFilas, ubicacion[2] * 4 + 3];
+
                         break;
 
                     case "SW":
+                         direccionMemoria = 0;
+
+                        //Se calcula la direccion de memoria
+                        direccionMemoria = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] + cache[contadorFilas, ubicacion[2] * 4 + 3];
+
+                        while (bloquearCacheSW(direccionMemoria, cache[contadorFilas, ubicacion[2] * 4 + 2]) == false)
+                        {
+                            //Aumentar ciclos
+                        }
+
+                        PC = PC + cache[contadorFilas, ubicacion[2] * 4 + 3];
+
                         break;
 
                     default: //Instrucción de fin
@@ -608,18 +550,29 @@ namespace proyectoArqui
             }
         }
 
-        public bool bloquearCacheLW()
+        public bool bloquearCacheLW(int direccionMemoria, int numRegistro)
         {
-
+            int palabra = 0;
+            bool bloqueo = false;
             // Solicita bloquear la caché
             if (Monitor.TryEnter(cacheDatos))
             {
                 try
                 {
+                    bloqueo = true;
+
                     //Se verifica si en la caché de datos se ubica el bloque leido
                     if (cacheDatos[4, ubicacion[2]] == ubicacion[0])
                     {
-                        //Se realiza la lectura. Hacerlo con metodo
+
+                         /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                        palabra = direccionMemoria % 16;
+                        palabra = palabra / 4;
+
+                        //Se realiza la lectura
+                        registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
+
+                        bloqueo = true;
 
                     }
                     //Se verifica si el bloque víctima está modificado o compartido
@@ -631,12 +584,19 @@ namespace proyectoArqui
                             //número de procesador, número de directorio, posición en memoria del número de bloque
                             if (solicitarDirectorioDiagrama3_LW(datosHilos[filaContextoActual, 4], 1, cacheDatos[4, ubicacion[2]]))
                             {
+                                /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                                palabra = direccionMemoria % 16;
+                                palabra = palabra / 4;
 
+                                //Se realiza la lectura
+                                registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
+
+                                bloqueo = true;
 
                             }
                             else
                             {
-
+                                bloqueo = false;
                             }
                         }
                         //El bloque pertenece al procesador 2
@@ -645,11 +605,18 @@ namespace proyectoArqui
                             //número de procesador, número de directorio, posición en memoria del número de bloque
                             if (solicitarDirectorioDiagrama3_LW(datosHilos[filaContextoActual, 4], 2, cacheDatos[4, ubicacion[2]] - 8))
                             {
+                                /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                                palabra = direccionMemoria % 16;
+                                palabra = palabra / 4;
 
+                                //Se realiza la lectura
+                                registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
+
+                                bloqueo = true;
                             }
                             else
                             {
-
+                                bloqueo = false;
                             }
                         }
                         //El bloque pertenece al procesador 3
@@ -658,52 +625,76 @@ namespace proyectoArqui
                             //número de procesador, número de directorio, posición en memoria del número de bloque
                             if (solicitarDirectorioDiagrama3_LW(datosHilos[filaContextoActual, 4], 3, cacheDatos[4, ubicacion[2]] - 16))
                             {
+                                /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                                palabra = direccionMemoria % 16;
+                                palabra = palabra / 4;
 
+                                //Se realiza la lectura
+                                registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
+
+                                bloqueo = true;
                             }
                             else
                             {
-
+                                bloqueo = false;
                             }
                         }
-
-
-
                     }
                     //En caso de no estar modificado, se solicita el directorio correspondiente del bloque que se va a leer
                     else if (ubicacion[0] <= 7) //Pertenece al procesador 1
                     {
                         if (solicitarDirectorioDiagrama1_LW(datosHilos[filaContextoActual, 4], 1, cacheDatos[4, ubicacion[2]]))
                         {
+                            /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                            palabra = direccionMemoria % 16;
+                            palabra = palabra / 4;
 
+                            //Se realiza la lectura
+                            registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
 
+                            bloqueo = true;
                         }
                         else
                         {
-
+                            bloqueo = false;
                         }
                     }
                     else if (ubicacion[0] > 7 && ubicacion[0] <= 15) //Pertenece al procesador 2
                     {
                         if (solicitarDirectorioDiagrama1_LW(datosHilos[filaContextoActual, 4], 2, cacheDatos[4, ubicacion[2]]))
                         {
+                            /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                            palabra = direccionMemoria % 16;
+                            palabra = palabra / 4;
 
+                            //Se realiza la lectura
+                            registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
+
+                            bloqueo = true;
 
                         }
                         else
                         {
-
+                            bloqueo = false;
                         }
                     }
                     else //Pertenece al procesador 3
                     {
-                        if (solicitarDirectorioDiagrama1_LW(datosHilos[filaContextoActual, 4], 1, cacheDatos[4, ubicacion[2]]))
+                        if (solicitarDirectorioDiagrama1_LW(datosHilos[filaContextoActual, 4], 3, cacheDatos[4, ubicacion[2]]))
                         {
+                            /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                            palabra = direccionMemoria % 16;
+                            palabra = palabra / 4;
 
+                            //Se realiza la lectura
+                            registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
+
+                            bloqueo = true;
 
                         }
                         else
                         {
-
+                            bloqueo = false;
                         }
                     }
 
@@ -713,23 +704,29 @@ namespace proyectoArqui
                     //Se libera la caché.
                     Monitor.Exit(cacheDatos);
                 }
-                return true;
             }
             else
             {
-                return false;
+                bloqueo = false;
             }
+
+            return bloqueo;
         }
 
-        public bool bloquearCacheSW()
+        public bool bloquearCacheSW(int direccionMemoria, int numRegistro)
         {
             bool hit = false;
             bool bloqueModificado = false;
+            int palabra = 0;
+            bool bloqueo = false;
+
             // Solicita bloquear la caché
             if (Monitor.TryEnter(cacheDatos))
             {
                 try
                 {
+                    bloqueo = true;
+
                     //Se verifica si en la caché de datos se ubica el bloque que se escribirá
                     if (cacheDatos[4, ubicacion[2]] == ubicacion[0])
                     {
@@ -737,7 +734,14 @@ namespace proyectoArqui
                         //Se revisa si el bloque está modificado
                         if (cacheDatos[5, ubicacion[2]] == modificado)
                         {
-                            //Se realiza la escritura
+                            /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                            palabra = direccionMemoria % 16;
+                            palabra = palabra / 4;
+
+                            //Se realiza la lectura
+                            cacheDatos[palabra, ubicacion[2]] = registros[numRegistro];
+
+                            bloqueo = true;
                         }
                         else if (cacheDatos[5, ubicacion[2]] == compartido) //Se revisa si el bloque entonces está compartido
                         {
@@ -746,11 +750,18 @@ namespace proyectoArqui
                             {
                                 if (solicitarDirectorioHit_BloqueCompartidoDiagrama4_SW(datosHilos[filaContextoActual, 4], 1, cacheDatos[4, ubicacion[2]], hit))
                                 {
-                                    //se realiza la escritura
+                                    /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                                    palabra = direccionMemoria % 16;
+                                    palabra = palabra / 4;
+
+                                    //Se realiza la lectura
+                                    cacheDatos[palabra, ubicacion[2]] = registros[numRegistro];
+
+                                    bloqueo = true;
                                 }
                                 else
                                 {
-                                    //volver a empezar
+                                    bloqueo = false;
                                 }
 
                             }
@@ -758,22 +769,36 @@ namespace proyectoArqui
                             {
                                 if (solicitarDirectorioHit_BloqueCompartidoDiagrama4_SW(datosHilos[filaContextoActual, 4], 2, cacheDatos[4, ubicacion[2]] - 8, hit))
                                 {
-                                    //se realiza la escritura
+                                    /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                                    palabra = direccionMemoria % 16;
+                                    palabra = palabra / 4;
+
+                                    //Se realiza la lectura
+                                    cacheDatos[palabra, ubicacion[2]] = registros[numRegistro];
+
+                                    bloqueo = true;
                                 }
                                 else
                                 {
-                                    //volver a empezar
+                                    bloqueo = false;
                                 }
                             }
                             else //El bloque pertenece al procesador 3
                             {
                                 if (solicitarDirectorioHit_BloqueCompartidoDiagrama4_SW(datosHilos[filaContextoActual, 4], 3, cacheDatos[4, ubicacion[2]] - 16, hit))
                                 {
-                                    //se realiza la escritura
+                                    /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                                    palabra = direccionMemoria % 16;
+                                    palabra = palabra / 4;
+
+                                    //Se realiza la lectura
+                                    cacheDatos[palabra, ubicacion[2]] = registros[numRegistro];
+
+                                    bloqueo = true;
                                 }
                                 else
                                 {
-                                    //volver a empezar
+                                    bloqueo = false;
                                 }
                             }
 
@@ -783,11 +808,18 @@ namespace proyectoArqui
                             hit = false;
                             if (solicitarDirectorioFallo_SW(datosHilos[filaContextoActual, 4], 2, cacheDatos[4, ubicacion[2]] - 16, hit))
                             {
-                                //se realiza la escritura
+                                /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                                palabra = direccionMemoria % 16;
+                                palabra = palabra / 4;
+
+                                //Se realiza la lectura
+                                cacheDatos[palabra, ubicacion[2]] = registros[numRegistro];
+
+                                bloqueo = true;
                             }
                             else
                             {
-                                //volver a empezar
+                                bloqueo = false;
                             }
                         }
                     }
@@ -809,12 +841,19 @@ namespace proyectoArqui
                             //número de procesador, número de directorio, número de bloque
                             if (solicitarDirectorioBloqueVictima_SW(datosHilos[filaContextoActual, 4], 1, cacheDatos[4, ubicacion[2]], bloqueModificado))
                             {
+                                /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                                palabra = direccionMemoria % 16;
+                                palabra = palabra / 4;
 
+                                //Se realiza la lectura
+                                cacheDatos[palabra, ubicacion[2]] = registros[numRegistro];
+
+                                bloqueo = true;
 
                             }
                             else
                             {
-
+                                bloqueo = false;
                             }
                         }
                         //El bloque pertenece al procesador 2
@@ -823,11 +862,18 @@ namespace proyectoArqui
                             //número de procesador, número de directorio, número de bloque
                             if (solicitarDirectorioBloqueVictima_SW(datosHilos[filaContextoActual, 4], 2, cacheDatos[4, ubicacion[2]] - 8, bloqueModificado))
                             {
+                                /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                                palabra = direccionMemoria % 16;
+                                palabra = palabra / 4;
 
+                                //Se realiza la lectura
+                                cacheDatos[palabra, ubicacion[2]] = registros[numRegistro];
+
+                                bloqueo = true;
                             }
                             else
                             {
-
+                                bloqueo = false;
                             }
                         }
                         //El bloque pertenece al procesador 3
@@ -836,11 +882,18 @@ namespace proyectoArqui
                             //número de procesador, número de directorio, número de bloque
                             if (solicitarDirectorioBloqueVictima_SW(datosHilos[filaContextoActual, 4], 3, cacheDatos[4, ubicacion[2]] - 16, bloqueModificado))
                             {
+                                /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                                palabra = direccionMemoria % 16;
+                                palabra = palabra / 4;
 
+                                //Se realiza la lectura
+                                cacheDatos[palabra, ubicacion[2]] = registros[numRegistro];
+
+                                bloqueo = true;
                             }
                             else
                             {
-
+                                bloqueo = false;
                             }
                         }
                     }
@@ -850,11 +903,18 @@ namespace proyectoArqui
 
                         if (solicitarDirectorioFallo_SW(datosHilos[filaContextoActual, 4], 1, cacheDatos[4, ubicacion[2]], hit))
                         {
+                            /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                            palabra = direccionMemoria % 16;
+                            palabra = palabra / 4;
 
+                            //Se realiza la lectura
+                            cacheDatos[palabra, ubicacion[2]] = registros[numRegistro];
+
+                            bloqueo = true;
                         }
                         else
                         {
-
+                            bloqueo = false;
                         }
 
                     }
@@ -863,11 +923,18 @@ namespace proyectoArqui
 
                         if (solicitarDirectorioFallo_SW(datosHilos[filaContextoActual, 4], 2, cacheDatos[4, ubicacion[2]] - 8, hit))
                         {
+                            /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                            palabra = direccionMemoria % 16;
+                            palabra = palabra / 4;
 
+                            //Se realiza la lectura
+                            cacheDatos[palabra, ubicacion[2]] = registros[numRegistro];
+
+                            bloqueo = true;
                         }
                         else
                         {
-
+                            bloqueo = false;
                         }
 
                     }
@@ -875,12 +942,19 @@ namespace proyectoArqui
                     {
                         if (solicitarDirectorioFallo_SW(datosHilos[filaContextoActual, 4], 1, cacheDatos[4, ubicacion[2]] - 16, hit))
                         {
+                            /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
+                            palabra = direccionMemoria % 16;
+                            palabra = palabra / 4;
 
+                            //Se realiza la lectura
+                            cacheDatos[palabra, ubicacion[2]] = registros[numRegistro];
+
+                            bloqueo = true;
 
                         }
                         else
                         {
-
+                            bloqueo = false;
                         }
                     }
 
@@ -890,16 +964,18 @@ namespace proyectoArqui
                     //Se libera la caché.
                     Monitor.Exit(cacheDatos);
                 }
-                return true;
+               
             }
             else
             {
-                return false;
+                bloqueo = false;
             }
+
+            return bloqueo;
         }
 
         /*Método que copia desde la memoria el contenido del bloque a la caché de datos */
-        public void copiarBloqueDesdeMemoria(int[] memCompartida, int posicionMemoria)
+        public void copiarBloqueDesdeMemoria(int[] memCompartida, int posicionMemoria, int tipoOperacion)
         {
             //Copio en la caché de datos el bloque que se escribirá 
             int contador = posicionMemoria;
@@ -912,8 +988,19 @@ namespace proyectoArqui
             //Se establece el número del bloque en la caché de datos 
             cacheDatos[4, ubicacion[2]] = ubicacion[0];
 
-            //Se establece el estado del bloque en la caché de datos 
-            cacheDatos[5, ubicacion[2]] = modificado;
+            //1 significa store
+            if (tipoOperacion == 1)
+            {
+                //Se establece el estado del bloque en la caché de datos 
+                cacheDatos[5, ubicacion[2]] = modificado;
+            }
+            //0 significa load
+            else if (tipoOperacion == 0)
+            {
+                //Se establece el estado del bloque en la caché de datos 
+                cacheDatos[5, ubicacion[2]] = compartido;
+            }
+            
         }
 
         //Método para solicitar el directorio en caso de que se produzca un fallo
@@ -2052,8 +2139,7 @@ namespace proyectoArqui
                         cacheDatos[4, ubicacion[2]] = numBloque;
                         cacheDatos[5, ubicacion[2]] = compartido;
 
-                        //actualiza la entrada del directorio con compartido
-                        procesadores.ElementAt(numCacheCasa - 2).directorio[posicionBloque, 1] = compartido;
+                        
                         //actualiza la entrada de la caché con compartido
                         procesadores.ElementAt(numCacheCasa - 2).cacheDatos[5, ubicacion[2]] = compartido;
 
@@ -2155,631 +2241,383 @@ namespace proyectoArqui
             return bloqueo;
         }
 
+        /* Método para verificar el estado de un bloque en un load debido a un fallo */
+        public bool verificarEstadoBloqueFalloCache_LW(int numProcesadorLocal, int[,] dir, int[] memCompartida, int posicionMemoriaCompartida, bool dirSolicitado)
+        {
+            bool bloqueo = false;
+            int posicionBloque = posicionMemoriaCompartida;
+            int[] datosBloqueModificado = new int[4];
+
+
+            if(dirSolicitado)
+            {
+                //Verifico si alguna caché lo tiene modificado
+                datosBloqueModificado = bloqueModificado(procesadores.ElementAt(0).directorio, posicionBloque);
+                if (datosBloqueModificado[0] == 1)
+                {
+                    //Se solicita la caché externa
+                    if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionBloque*4, datosBloqueModificado[2], solicitudCacheDiagrama2_LW))
+                    {
+                        //actualiza la entrada del directorio con compartido
+                        dir[posicionBloque, 1] = compartido;
+                        dir[posicionBloque, datosBloqueModificado[1] + 1] = 0;
+
+                        bloqueo = true;
+                    }
+                    else
+                    {
+                        //SE LIBERAN LAS COSAS
+                        bloqueo = false;
+                    }
+                }
+                else
+                {
+                    copiarBloqueDesdeMemoria(memCompartida, posicionBloque * 4, 0);
+
+                    //Actualiza la entrada del estado de la caché en el directorio a "compartido" y 
+                    //se indica que lo posee el procesador 1
+                    dir[posicionBloque, 1] = compartido;
+                    dir[posicionBloque, numProcesadorLocal+1] = 1;
+
+                    bloqueo = true;
+
+                    //Realiza la lectura
+                }
+          }
+          else
+          {
+                if (Monitor.TryEnter(dir))
+                {
+                       try
+                       {
+                           bloqueo = true;
+                            //Verifico si alguna caché lo tiene modificado
+                            datosBloqueModificado = bloqueModificado(procesadores.ElementAt(0).directorio, posicionBloque);
+                            if (datosBloqueModificado[0] == 1)
+                            {
+                                //Se solicita la caché externa
+                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionBloque*4, datosBloqueModificado[2], solicitudCacheDiagrama2_LW))
+                                {
+                                    //actualiza la entrada del directorio con compartido
+                                    dir[posicionBloque, 1] = compartido;
+                                    dir[posicionBloque, datosBloqueModificado[1] + 1] = 0;
+
+                                    bloqueo = true;
+                                }
+                                else
+                                {
+                                    //SE LIBERAN LAS COSAS
+                                    bloqueo = false;
+                                }
+                            }
+                            else
+                            {
+                                copiarBloqueDesdeMemoria(memCompartida, posicionBloque * 4, 0);
+
+                                //Actualiza la entrada del estado de la caché en el directorio a "compartido" y el procesador
+                                //que lo posee
+                                dir[posicionBloque, 1] = compartido;
+                                dir[posicionBloque, numProcesadorLocal+1] = 1;
+
+                                bloqueo = true;
+
+                                //Realiza la lectura
+                            }
+                       }
+                       finally
+                       {
+                           Monitor.Exit(dir);
+                       }
+                }
+                else
+                {
+                    bloqueo = false;
+                }
+          }
+
+            return bloqueo;
+           
+        }
+
         //Método para solicitar un directorio externo
         public bool solicitarDirectorioDiagrama3_LW(int numProcesadorLocal, int numDirectorio, int posicionMemoriaCompartida)
         {
             bool bloqueo = false;
             int posicionBloque = posicionMemoriaCompartida;
             bool liberarDirectorio = true;
+            int posicionProcesador = 0;
+            bool directorioSolicitado = false;
 
-            int[] datosBloqueModificado = new int[2];
+            int[] datosBloqueModificado = new int[4];
 
-            if (numProcesadorLocal == 1) //Se está ejecutando el procesador 1
+            if (numProcesadorLocal == numDirectorio)
             {
 
-                if (numDirectorio == 1)
+                if (Monitor.TryEnter(directorio))
                 {
-                    if (Monitor.TryEnter(directorio))
+                    try
                     {
-                        try
+                        bloqueo = true;
+
+                        if (cacheDatos[5, ubicacion[2]] == modificado) //El bloque víctima se encuentra modificado
                         {
-                            bloqueo = true;
-
-                            if (cacheDatos[5, ubicacion[2]] == modificado) //El bloque víctima se encuentra modificado
-                            {
-                                //Se copia en la memoria respectiva el contenido del bloque ubicado en la caché de datos
-                                for (int i = 0; i < 4; ++i)
-                                {
-                                    memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[ubicacion[2], i];
-                                    ++posicionMemoriaCompartida;
-                                }
-
-                            }
-
-                            //Se coloca en "uncached" la posición del bloque que será reemplazado y se actualiza la entrada del procesador
-                            directorio[posicionBloque, 2] = 0;
-                            if (bloqueLibre(directorio, posicionBloque))
-                            {
-                                directorio[posicionBloque, 1] = uncached;
-                            }
-
-
-                            //Se invalida la entrada en la caché de datos
-                            cacheDatos[5, ubicacion[2]] = invalido;
-
-                            //----------------------------------------
-                            //Se verifica si el bloque que se va a leer se encuentra en el mismo directorio
-                            if (ubicacion[0] <= 7)
-                            {
-                                //Verifico si alguna caché lo tiene modificado
-                                datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                                if (datosBloqueModificado[0] == 1)
-                                {
-                                    //Se solicita la caché externa
-                                    if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionBloque, datosBloqueModificado[2], solicitudCacheDiagrama2_LW))
-                                    {
-
-                                    }
-                                    else
-                                    {
-                                        //SE LIBERAN LAS COSAS
-                                    }
-                                }
-                                else
-                                {
-
-                                }
-
-                            }
-                            //el bloque está en el directorio 2 o 3
-                            else  //El bloque se encuentra en otro directorio y debe solicitarse
-                            {
-                                int directorioExterno = 0;
-                                if (ubicacion[0] > 15)
-                                {
-                                    directorioExterno = 1;
-                                }
-
-                                if (Monitor.TryEnter(procesadores.ElementAt(directorioExterno).directorio))
-                                {
-                                    try
-                                    {
-                                        //Libera su propio directorio 
-                                        Monitor.Exit(directorio);
-                                        liberarDirectorio = false;
-
-                                        //Verifico si alguna caché lo tiene modificado
-                                        datosBloqueModificado = bloqueModificado(procesadores.ElementAt(directorioExterno).directorio, posicionBloque);
-                                        if (datosBloqueModificado[0] == 1)
-                                        {
-                                            //Se solicita la caché externa
-                                            if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionBloque, datosBloqueModificado[2], solicitudCacheDiagrama2_LW))
-                                            {
-
-                                            }
-                                            else
-                                            {
-                                                //SE LIBERAN LAS COSAS
-                                            }
-                                        }
-                                        else
-                                        {
-                                            int contador = posicionBloque;
-                                            //Se copia desde la memoria el bloque
-                                            for (int i = 0; i < 4; i++)
-                                            {
-
-                                                cacheDatos[i, ubicacion[2]] = procesadores.ElementAt(directorioExterno).memoriaCompartida[contador];
-                                                contador++;
-
-                                            }
-
-                                            //Actualiza la entrada del estado de la caché en el directorio a "compartido" y 
-                                            //se indica que lo posee el procesador 1
-                                            procesadores.ElementAt(directorioExterno).directorio[posicionBloque, 1] = compartido;
-                                            procesadores.ElementAt(directorioExterno).directorio[posicionBloque, 2] = 1;
-
-                                            //Actualiza la entrada en la caché propia a "Compartida"
-                                            cacheDatos[5, ubicacion[2]] = compartido;
-
-                                            //Realiza la lectura
-
-                                        }
-                                    }
-                                    finally
-                                    {
-                                        Monitor.Exit(procesadores.ElementAt(directorioExterno).directorio);
-                                    }
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            if (liberarDirectorio)
-                            {
-                                Monitor.Exit(directorio);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
-                }
-                else if (numDirectorio == 2)
-                {
-                    if (Monitor.TryEnter(procesadores.ElementAt(0).directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
-                            liberarDirectorio = false;
-
-
-                            if (cacheDatos[5, ubicacion[2]] == modificado) //El bloque víctima se encuentra modificado
-                            {
-                                //Se copia en la memoria respectiva el contenido del bloque ubicado en la caché de datos
-                                for (int i = 0; i < 4; ++i)
-                                {
-                                    procesadores.ElementAt(0).memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[ubicacion[2], i];
-                                    ++posicionMemoriaCompartida;
-                                }
-
-                            }
-
-                            //Se coloca en "uncached" la posición del bloque que será reemplazado y se actualiza la entrada del procesador
-                            procesadores.ElementAt(0).directorio[posicionBloque, 2] = 0;
-                            if (bloqueLibre(directorio, posicionBloque))
-                            {
-                                procesadores.ElementAt(0).directorio[posicionBloque, 1] = uncached;
-                            }
-
-
-                            //Se invalida la entrada en la caché de datos
-                            cacheDatos[5, ubicacion[2]] = invalido;
-
-
-                            //----------------------------------------
-                            //Se verifica si el bloque que se va a leer se encuentra en el mismo directorio 2
-                            if (ubicacion[0] > 7 && ubicacion[0] <= 15)
-                            {
-                                //Verifico si alguna caché lo tiene modificado
-                                datosBloqueModificado = bloqueModificado(procesadores.ElementAt(0).directorio, posicionBloque);
-                                if (datosBloqueModificado[0] == 1)
-                                {
-                                    //Se solicita la caché externa
-                                    if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionBloque, datosBloqueModificado[2], solicitudCacheDiagrama2_LW))
-                                    {
-
-                                    }
-                                    else
-                                    {
-                                        //SE LIBERAN LAS COSAS
-                                    }
-                                }
-                                else
-                                {
-                                    //Ninguno lo tiene modificado
-                                }
-
-                            }
-                            //el bloque está en el directorio 1 o 3
-                            else  //El bloque se encuentra en otro directorio y debe solicitarse
-                            {
-
-                                if (ubicacion[0] < 7) //Pertenece al procesador 1
-                                {
-                                    if (Monitor.TryEnter(directorio))
-                                    {
-                                        try
-                                        {
-                                            //Libera su propio directorio 
-                                            Monitor.Exit(procesadores.ElementAt(0).directorio);
-                                            liberarDirectorio = false;
-                                            bloqueo = true;
-
-                                            //Verifico si alguna caché lo tiene modificado
-                                            datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                                            if (datosBloqueModificado[0] == 1)
-                                            {
-                                                //Se solicita la caché externa
-                                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionBloque, datosBloqueModificado[2], solicitudCacheDiagrama2_LW))
-                                                {
-
-                                                }
-                                                else
-                                                {
-                                                    //SE LIBERAN LAS COSAS
-                                                }
-                                            }
-                                            else
-                                            {
-                                                int contador = posicionBloque;
-                                                //Se copia desde la memoria el bloque
-                                                for (int i = 0; i < 4; i++)
-                                                {
-
-                                                    cacheDatos[i, ubicacion[2]] = memoriaCompartida[contador];
-                                                    contador++;
-
-                                                }
-
-                                                //Actualiza la entrada del estado de la caché en el directorio a "compartido" y 
-                                                //se indica que lo posee el procesador 1
-                                                directorio[posicionBloque, 1] = compartido;
-                                                directorio[posicionBloque, 2] = 1;
-
-                                                //Actualiza la entrada en la caché propia a "Compartida"
-                                                cacheDatos[5, ubicacion[2]] = compartido;
-
-                                                //Realiza la lectura
-
-                                            }
-                                        }
-                                        finally
-                                        {
-                                            Monitor.Exit(directorio);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        bloqueo = false;
-                                    }
-                                }
-                                else //Pertenece al procesador 3
-                                {
-                                    if (Monitor.TryEnter(procesadores.ElementAt(1).directorio))
-                                    {
-                                        try
-                                        {
-                                            //Libera su propio directorio 
-                                            Monitor.Exit(procesadores.ElementAt(0).directorio);
-                                            liberarDirectorio = false;
-
-                                            //Verifico si alguna caché lo tiene modificado
-                                            datosBloqueModificado = bloqueModificado(procesadores.ElementAt(1).directorio, posicionBloque);
-                                            if (datosBloqueModificado[0] == 1)
-                                            {
-                                                //Se solicita la caché externa
-                                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionBloque, datosBloqueModificado[2], solicitudCacheDiagrama2_LW))
-                                                {
-
-                                                }
-                                                else
-                                                {
-                                                    //SE LIBERAN LAS COSAS
-                                                }
-                                            }
-                                            else
-                                            {
-                                                int contador = posicionBloque;
-
-                                                //Se copia desde la memoria el bloque
-                                                for (int i = 0; i < 4; i++)
-                                                {
-
-                                                    cacheDatos[i, ubicacion[2]] = procesadores.ElementAt(1).memoriaCompartida[contador];
-                                                    contador++;
-
-                                                }
-
-                                                //Actualiza la entrada del estado de la caché en el directorio a "compartido" y 
-                                                //se indica que lo posee el procesador 1
-                                                procesadores.ElementAt(1).directorio[posicionBloque, 1] = compartido;
-                                                procesadores.ElementAt(1).directorio[posicionBloque, 2] = 1;
-
-                                                //Actualiza la entrada en la caché propia a "Compartida"
-                                                cacheDatos[5, ubicacion[2]] = compartido;
-
-                                                //Realiza la lectura
-
-                                            }
-                                        }
-                                        finally
-                                        {
-                                            Monitor.Exit(procesadores.ElementAt(1).directorio);
-                                            //   Monitor.Exit(cacheDatos);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        bloqueo = false;
-                                    }
-                                }
-
-                            }
-
-                        }
-                        finally
-                        {
-                            if (liberarDirectorio)
-                            {
-                                Monitor.Exit(procesadores.ElementAt(0).directorio);
-                            }
-
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
-                }
-                else if (numDirectorio == 3)
-                {
-                    if (Monitor.TryEnter(procesadores.ElementAt(1).directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
-
-
-
-                            if (cacheDatos[5, ubicacion[2]] == modificado) //El bloque víctima se encuentra modificado
-                            {
-                                //Se copia en la memoria respectiva el contenido del bloque ubicado en la caché de datos
-                                for (int i = 0; i < 4; ++i)
-                                {
-                                    procesadores.ElementAt(1).memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[ubicacion[2], i];
-                                    ++posicionMemoriaCompartida;
-                                }
-
-                            }
-
-                            //Se coloca en "uncached" la posición del bloque que será reemplazado y se actualiza la entrada del procesador
-                            procesadores.ElementAt(1).directorio[posicionBloque, 2] = 0;
-                            if (bloqueLibre(directorio, posicionBloque))
-                            {
-                                procesadores.ElementAt(1).directorio[posicionBloque, 1] = uncached;
-                            }
-
-
-                            //Se invalida la entrada en la caché de datos
-                            cacheDatos[5, ubicacion[2]] = invalido;
-
-                        }
-                        finally
-                        {
-                            Monitor.Exit(procesadores.ElementAt(1).directorio);
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
-
-                }
-            }
-            else if (numProcesadorLocal == 2) //Se está ejecutando el procesador 2
-            {
-                if (numDirectorio == 1)
-                {
-                    if (Monitor.TryEnter(procesadores.ElementAt(0).directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
-
-                            if (cacheDatos[5, ubicacion[2]] == modificado) //El bloque víctima se encuentra modificado
-                            {
-                                //Se copia en la memoria respectiva el contenido del bloque ubicado en la caché de datos
-                                for (int i = 0; i < 4; ++i)
-                                {
-                                    procesadores.ElementAt(0).memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[ubicacion[2], i];
-                                    ++posicionMemoriaCompartida;
-                                }
-
-                            }
-
-                            //Se coloca en "uncached" la posición del bloque que será reemplazado y se actualiza la entrada del procesador
-                            procesadores.ElementAt(0).directorio[posicionBloque, 2] = 0;
-                            if (bloqueLibre(directorio, posicionBloque))
-                            {
-                                procesadores.ElementAt(0).directorio[posicionBloque, 1] = uncached;
-                            }
-
-
-                            //Se invalida la entrada en la caché de datos
-                            cacheDatos[5, ubicacion[2]] = invalido;
-
-                        }
-                        finally
-                        {
-                            Monitor.Exit(procesadores.ElementAt(0).directorio);
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
-                }
-
-                if (numDirectorio == 2)
-                {
-                    if (Monitor.TryEnter(directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
-
-                            if (cacheDatos[5, ubicacion[2]] == modificado) //El bloque víctima se encuentra modificado
-                            {
-                                //Se copia en la memoria respectiva el contenido del bloque ubicado en la caché de datos
-                                for (int i = 0; i < 4; ++i)
-                                {
-                                    memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[ubicacion[2], i];
-                                    ++posicionMemoriaCompartida;
-                                }
-
-                            }
-
-                            //Se coloca en "uncached" la posición del bloque que será reemplazado y se actualiza la entrada del procesador
-                            directorio[posicionBloque, 2] = 0;
-                            if (bloqueLibre(directorio, posicionBloque))
-                            {
-                                directorio[posicionBloque, 1] = uncached;
-                            }
-
-
-                            //Se invalida la entrada en la caché de datos
-                            cacheDatos[5, ubicacion[2]] = invalido;
-
-                        }
-                        finally
-                        {
-                            Monitor.Exit(directorio);
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
-                }
-                else
-                {
-                    if (Monitor.TryEnter(procesadores.ElementAt(1).directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
-
                             //Se copia en la memoria respectiva el contenido del bloque ubicado en la caché de datos
                             for (int i = 0; i < 4; ++i)
                             {
-                                procesadores.ElementAt(1).memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[i, ubicacion[2]];
+                                memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[ubicacion[2], i];
                                 ++posicionMemoriaCompartida;
                             }
 
-                            //Se coloca en "uncached" la posición del bloque que será reemplazado y se actualiza la entrada del procesador
-                            procesadores.ElementAt(1).directorio[posicionBloque, 1] = uncached;
-                            procesadores.ElementAt(1).directorio[posicionBloque, 2] = 0;
-
-                            //Se invalida la entrada en la caché de datos
-                            cacheDatos[5, ubicacion[2]] = invalido;
                         }
-                        finally
-                        {
-                            Monitor.Exit(procesadores.ElementAt(1).directorio);
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
-                }
-            }
-            else //Se está ejecutando el procesador 3
-            {
-                if (numDirectorio == 1)
-                {
-                    if (Monitor.TryEnter(procesadores.ElementAt(0).directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
 
-                            if (cacheDatos[5, ubicacion[2]] == modificado) //El bloque víctima se encuentra modificado
+                        //Se coloca en "uncached" la posición del bloque que será reemplazado y se actualiza la entrada del procesador
+                        directorio[posicionBloque, 2] = 0;
+                        if (bloqueLibre(directorio, posicionBloque))
+                        {
+                            directorio[posicionBloque, 1] = uncached;
+                        }
+
+
+                        //Se invalida la entrada en la caché de datos
+                        cacheDatos[5, ubicacion[2]] = invalido;
+
+                        //----------------------------------------
+                        //Se verifica si el bloque que se va a leer se encuentra en el mismo directorio
+                        if (ubicacion[0] <= 7)
+                        {
+                            //Verifico si alguna caché lo tiene modificado
+                            datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
+                            if (datosBloqueModificado[0] == 1)
                             {
-                                //Se copia en la memoria respectiva el contenido del bloque ubicado en la caché de datos
-                                for (int i = 0; i < 4; ++i)
+                                //Se solicita la caché externa
+                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionBloque * 4, datosBloqueModificado[2], solicitudCacheDiagrama2_LW))
                                 {
-                                    procesadores.ElementAt(0).memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[ubicacion[2], i];
-                                    ++posicionMemoriaCompartida;
+                                    //actualiza la entrada del directorio con compartido
+                                    directorio[posicionBloque, 1] = compartido;
+                                    directorio[posicionBloque, datosBloqueModificado[1] + 1] = 0;
                                 }
-
-                            }
-
-                            //Se coloca en "uncached" la posición del bloque que será reemplazado y se actualiza la entrada del procesador
-                            procesadores.ElementAt(0).directorio[posicionBloque, 2] = 0;
-                            if (bloqueLibre(directorio, posicionBloque))
-                            {
-                                procesadores.ElementAt(0).directorio[posicionBloque, 1] = uncached;
-                            }
-
-
-                            //Se invalida la entrada en la caché de datos
-                            cacheDatos[5, ubicacion[2]] = invalido;
-
-                        }
-                        finally
-                        {
-                            Monitor.Exit(procesadores.ElementAt(0).directorio);
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
-                }
-                else if (numDirectorio == 2)
-                {
-                    if (Monitor.TryEnter(procesadores.ElementAt(1).directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
-
-                            if (cacheDatos[5, ubicacion[2]] == modificado) //El bloque víctima se encuentra modificado
-                            {
-                                //Se copia en la memoria respectiva el contenido del bloque ubicado en la caché de datos
-                                for (int i = 0; i < 4; ++i)
+                                else
                                 {
-                                    procesadores.ElementAt(1).memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[ubicacion[2], i];
-                                    ++posicionMemoriaCompartida;
+                                    //SE LIBERAN LAS COSAS
+                                    bloqueo = false;
                                 }
+                            }
+                            else
+                            {
+                                //0 porque es un load
+                                copiarBloqueDesdeMemoria(memoriaCompartida, posicionBloque * 4, 0);
 
+                                //Actualiza la entrada del estado de la caché en el directorio a "compartido" y 
+                                //se indica cual procesador lo posee
+                                directorio[posicionBloque, 1] = compartido;
+                                directorio[posicionBloque, 2] = 1;
+
+                                bloqueo = true;
                             }
 
-                            //Se coloca en "uncached" la posición del bloque que será reemplazado y se actualiza la entrada del procesador
-                            procesadores.ElementAt(1).directorio[posicionBloque, 2] = 0;
-                            if (bloqueLibre(directorio, posicionBloque))
+                        }
+                        //el bloque está en el directorio 2 o 3
+                        else  //El bloque se encuentra en otro directorio y debe solicitarse
+                        {
+                            int directorioExterno = 0;
+                            if (ubicacion[0] > 15)
                             {
-                                procesadores.ElementAt(1).directorio[posicionBloque, 1] = uncached;
+                                directorioExterno = 1;
                             }
 
-
-                            //Se invalida la entrada en la caché de datos
-                            cacheDatos[5, ubicacion[2]] = invalido;
-                        }
-                        finally
-                        {
-                            Monitor.Exit(procesadores.ElementAt(1).directorio);
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
-                }
-                else
-                {
-                    if (Monitor.TryEnter(directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
-
-                            if (cacheDatos[5, ubicacion[2]] == modificado) //El bloque víctima se encuentra modificado
+                            if (Monitor.TryEnter(procesadores.ElementAt(directorioExterno).directorio))
                             {
-                                //Se copia en la memoria respectiva el contenido del bloque ubicado en la caché de datos
-                                for (int i = 0; i < 4; ++i)
+                                try
                                 {
-                                    memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[ubicacion[2], i];
-                                    ++posicionMemoriaCompartida;
+                                    //Libera su propio directorio 
+                                    Monitor.Exit(directorio);
+                                    liberarDirectorio = false;
+
+                                    //Verifico si alguna caché lo tiene modificado
+                                    datosBloqueModificado = bloqueModificado(procesadores.ElementAt(directorioExterno).directorio, posicionBloque);
+                                    if (datosBloqueModificado[0] == 1)
+                                    {
+                                        //Se solicita la caché externa
+                                        if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionBloque, datosBloqueModificado[2], solicitudCacheDiagrama2_LW))
+                                        {
+                                            procesadores.ElementAt(directorioExterno).directorio[posicionBloque, 1] = compartido;
+                                            procesadores.ElementAt(directorioExterno).directorio[posicionBloque, datosBloqueModificado[1] + 1] = 0;
+                                        }
+                                        else
+                                        {
+                                            //SE LIBERAN LAS COSAS
+                                            bloqueo = false;
+                                        }
+                                    }
+                                    else
+                                    {
+
+                                        copiarBloqueDesdeMemoria(procesadores.ElementAt(directorioExterno).memoriaCompartida, posicionBloque * 4, 0);
+
+                                        //Actualiza la entrada del estado de la caché en el directorio a "compartido" y 
+                                        //se indica que lo posee el procesador 1
+                                        procesadores.ElementAt(directorioExterno).directorio[posicionBloque, 1] = compartido;
+                                        procesadores.ElementAt(directorioExterno).directorio[posicionBloque, 2] = 1;
+
+                                        bloqueo = true;
+
+                                        //Realiza la lectura
+
+                                    }
                                 }
-
+                                finally
+                                {
+                                    Monitor.Exit(procesadores.ElementAt(directorioExterno).directorio);
+                                }
                             }
-
-                            //Se coloca en "uncached" la posición del bloque que será reemplazado y se actualiza la entrada del procesador
-                            directorio[posicionBloque, 2] = 0;
-                            if (bloqueLibre(directorio, posicionBloque))
+                            else
                             {
-                                directorio[posicionBloque, 1] = uncached;
+
                             }
-
-
-                            //Se invalida la entrada en la caché de datos
-                            cacheDatos[5, ubicacion[2]] = invalido;
-
                         }
-                        finally
+                    }
+                    finally
+                    {
+                        if (liberarDirectorio)
                         {
                             Monitor.Exit(directorio);
                         }
                     }
+                }
+                else
+                {
+                    bloqueo = false;
+                }
+            }
+            else
+            {
+                if (numProcesadorLocal == 1) //Se está ejecutando el procesador 1
+                {
+                    posicionProcesador = numDirectorio - 2;
+                }
+                else if (numProcesadorLocal == 2) //Se está ejecutando el procesador 2
+                {
+                    if (numDirectorio == 1)
+                    {
+                        posicionProcesador = 0;
+                    }
                     else
                     {
-                        bloqueo = false;
+                        posicionProcesador = 1;
                     }
+
+                }
+                else //Se está ejecutando el procesador 3
+                {
+                    posicionProcesador = numDirectorio - 1;
+                }
+
+                if (Monitor.TryEnter(procesadores.ElementAt(posicionProcesador).directorio))
+                {
+                    try
+                    {
+                        bloqueo = true;
+                        liberarDirectorio = false;
+
+
+                        if (cacheDatos[5, ubicacion[2]] == modificado) //El bloque víctima se encuentra modificado
+                        {
+                            //Se copia en la memoria respectiva el contenido del bloque ubicado en la caché de datos
+                            for (int i = 0; i < 4; ++i)
+                            {
+                                procesadores.ElementAt(posicionProcesador).memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[ubicacion[2], i];
+                                ++posicionMemoriaCompartida;
+                            }
+
+                        }
+
+                        //Se coloca en "uncached" la posición del bloque que será reemplazado y se actualiza la entrada del procesador
+                        procesadores.ElementAt(posicionProcesador).directorio[posicionBloque, 2] = 0;
+                        if (bloqueLibre(procesadores.ElementAt(posicionProcesador).directorio, posicionBloque))
+                        {
+                            procesadores.ElementAt(posicionProcesador).directorio[posicionBloque, 1] = uncached;
+                        }
+
+
+                        //Se invalida la entrada en la caché de datos
+                        cacheDatos[5, ubicacion[2]] = invalido;
+
+
+                        //----------------------------------------
+                        //Se verifica si el bloque que se va a leer se encuentra en el mismo directorio 
+                        if (ubicacion[0] <= 7) //Bloque pertenece al procesador 1
+                        {
+                            if (numDirectorio == 1)
+                            {
+                                directorioSolicitado = true;
+                            }
+                            else
+                            {
+                                directorioSolicitado = false;
+                                
+                            }
+
+                            if (verificarEstadoBloqueFalloCache_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesador).directorio, procesadores.ElementAt(posicionProcesador).memoriaCompartida, posicionBloque * 4, directorioSolicitado))
+                            {
+                                bloqueo = true;
+                            }
+                            else
+                            {
+                                bloqueo = false;
+                            }
+
+                        }
+                        else if (ubicacion[0] <= 15) //Bloque pertenece al procesador 2
+                        {
+                            if (numDirectorio == 2)
+                            {
+                                directorioSolicitado = true;
+                            }
+                            else
+                            {
+                                directorioSolicitado = false;
+
+                            }
+
+                            if (verificarEstadoBloqueFalloCache_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesador).directorio, procesadores.ElementAt(posicionProcesador).memoriaCompartida, posicionBloque * 4, directorioSolicitado))
+                            {
+                                bloqueo = true;
+                            }
+                            else
+                            {
+                                bloqueo = false;
+                            }
+                        }
+                        else //Bloque pertenece al procesador 3
+                        {
+                            if (numDirectorio == 3)
+                            {
+                                directorioSolicitado = true;
+                            }
+                            else
+                            {
+                                directorioSolicitado = false;
+
+                            }
+
+                            if (verificarEstadoBloqueFalloCache_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesador).directorio, procesadores.ElementAt(posicionProcesador).memoriaCompartida, posicionBloque * 4, directorioSolicitado))
+                            {
+                                bloqueo = true;
+                            }
+                            else
+                            {
+                                bloqueo = false;
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        Monitor.Exit(procesadores.ElementAt(posicionProcesador).directorio);
+                    }
+                }
+                else
+                {
+                    bloqueo = false;
                 }
             }
 
@@ -2791,433 +2629,57 @@ namespace proyectoArqui
             bool bloqueo = false;
             int posicionBloque = posicionMemoriaCompartida;
             int[] datosBloqueModificado = new int[4];
+            bool directorioSolicitado = false;
+            int posicionProcesador = 0;
 
-            if (numProcesadorLocal == 1) //Se está ejecutando el procesador 1
+
+            if (numProcesadorLocal == numDirectorio)
             {
-
-                if (numDirectorio == 1)
+                if (verificarEstadoBloque_FalloCacheSW(numProcesadorLocal, directorio, memoriaCompartida, posicionBloque, directorioSolicitado))
                 {
-                    if (Monitor.TryEnter(directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
-
-                            //Verifico si alguna caché lo tiene modificado
-                            datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                            if (datosBloqueModificado[0] == 1)
-                            {
-                                //Se solicita la caché externa
-                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], 1))
-                                {
-
-                                }
-                                else
-                                {
-                                    //SE LIBERAN LAS COSAS
-                                }
-                            }
-                            else
-                            {
-                                //Copio desde la memoria el bloque
-                                for (int i = 0; i < 4; ++i)
-                                {
-                                    memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[i, ubicacion[2]];
-                                    ++posicionMemoriaCompartida;
-                                }
-
-
-                            }
-                        }
-                        finally
-                        {
-                            Monitor.Exit(directorio);
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
+                    bloqueo = true;
                 }
-                else if (numDirectorio == 2)
+                else 
                 {
-                    if (Monitor.TryEnter(procesadores.ElementAt(0).directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
-
-
-                            //Verifico si alguna caché lo tiene modificado
-                            datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                            if (datosBloqueModificado[0] == 1)
-                            {
-                                //Se solicita la caché externa
-                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], 1))
-                                {
-
-                                }
-                                else
-                                {
-                                    //SE LIBERAN LAS COSAS
-                                }
-                            }
-                            else
-                            {
-                                //Copio desde la memoria el bloque
-                                for (int i = 0; i < 4; ++i)
-                                {
-                                    procesadores.ElementAt(0).memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[i, ubicacion[2]];
-                                    ++posicionMemoriaCompartida;
-                                }
-
-
-                            }
-                        }
-                        finally
-                        {
-                            Monitor.Exit(procesadores.ElementAt(0).directorio);
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
-                }
-                else
-                {
-                    if (Monitor.TryEnter(procesadores.ElementAt(1).directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
-
-
-                            //Verifico si alguna caché lo tiene modificado
-                            datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                            if (datosBloqueModificado[0] == 1)
-                            {
-                                //Se solicita la caché externa
-                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], 1))
-                                {
-
-                                }
-                                else
-                                {
-                                    //SE LIBERAN LAS COSAS
-                                }
-                            }
-                            else
-                            {
-                                //Copio desde la memoria el bloque
-                                for (int i = 0; i < 4; ++i)
-                                {
-                                    procesadores.ElementAt(1).memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[i, ubicacion[2]];
-                                    ++posicionMemoriaCompartida;
-                                }
-
-
-                            }
-                        }
-                        finally
-                        {
-                            Monitor.Exit(procesadores.ElementAt(1).directorio);
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
-
+                    bloqueo = false;
                 }
             }
-            else if (numProcesadorLocal == 2) //Se está ejecutando el procesador 2
+            else
             {
-                if (numDirectorio == 1)
+                if (numProcesadorLocal == 1) //Se está ejecutando el procesador 1
                 {
-                    if (Monitor.TryEnter(procesadores.ElementAt(0).directorio))
+                    posicionProcesador = numDirectorio - 2;
+                }
+                else if (numProcesadorLocal == 2) //Se está ejecutando el procesador 2
+                {
+                    if (numDirectorio == 1)
                     {
-                        try
-                        {
-                            bloqueo = true;
-
-
-                            //Verifico si alguna caché lo tiene modificado
-                            datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                            if (datosBloqueModificado[0] == 1)
-                            {
-                                //Se solicita la caché externa
-                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], 1))
-                                {
-
-                                }
-                                else
-                                {
-                                    //SE LIBERAN LAS COSAS
-                                }
-                            }
-                            else
-                            {
-                                //Copio desde la memoria el bloque
-                                for (int i = 0; i < 4; ++i)
-                                {
-                                    procesadores.ElementAt(0).memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[i, ubicacion[2]];
-                                    ++posicionMemoriaCompartida;
-                                }
-
-
-                            }
-
-                        }
-                        finally
-                        {
-                            Monitor.Exit(procesadores.ElementAt(0).directorio);
-                        }
+                        posicionProcesador = 0;
                     }
                     else
                     {
-                        bloqueo = false;
+                        posicionProcesador = 1;
                     }
+
+                }
+                else //Se está ejecutando el procesador 3
+                {
+                    posicionProcesador = numDirectorio - 1;
                 }
 
-                if (numDirectorio == 2)
+                if (verificarEstadoBloque_FalloCacheSW(numProcesadorLocal, procesadores.ElementAt(posicionProcesador).directorio, procesadores.ElementAt(posicionProcesador).memoriaCompartida, posicionBloque, directorioSolicitado))
                 {
-                    if (Monitor.TryEnter(directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
-
-
-
-                            //Verifico si alguna caché lo tiene modificado
-                            datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                            if (datosBloqueModificado[0] == 1)
-                            {
-                                //Se solicita la caché externa
-                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], 1))
-                                {
-
-                                }
-                                else
-                                {
-                                    //SE LIBERAN LAS COSAS
-                                }
-                            }
-                            else
-                            {
-                                //Copio desde la memoria el bloque
-                                for (int i = 0; i < 4; ++i)
-                                {
-                                    memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[i, ubicacion[2]];
-                                    ++posicionMemoriaCompartida;
-                                }
-
-
-                            }
-                        }
-                        finally
-                        {
-                            Monitor.Exit(directorio);
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
+                    bloqueo = true;
                 }
                 else
                 {
-                    if (Monitor.TryEnter(procesadores.ElementAt(1).directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
-
-
-
-                            //Verifico si alguna caché lo tiene modificado
-                            datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                            if (datosBloqueModificado[0] == 1)
-                            {
-                                //Se solicita la caché externa
-                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], 1))
-                                {
-
-                                }
-                                else
-                                {
-                                    //SE LIBERAN LAS COSAS
-                                }
-                            }
-                            else
-                            {
-                                //Copio desde la memoria el bloque
-                                for (int i = 0; i < 4; ++i)
-                                {
-                                    procesadores.ElementAt(1).memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[i, ubicacion[2]];
-                                    ++posicionMemoriaCompartida;
-                                }
-
-
-                            }
-                        }
-                        finally
-                        {
-                            Monitor.Exit(procesadores.ElementAt(1).directorio);
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
-                }
-            }
-            else //Se está ejecutando el procesador 3
-            {
-                if (numDirectorio == 1)
-                {
-                    if (Monitor.TryEnter(procesadores.ElementAt(0).directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
-
-
-
-                            //Verifico si alguna caché lo tiene modificado
-                            datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                            if (datosBloqueModificado[0] == 1)
-                            {
-                                //Se solicita la caché externa
-                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], 1))
-                                {
-
-                                }
-                                else
-                                {
-                                    //SE LIBERAN LAS COSAS
-                                }
-                            }
-                            else
-                            {
-                                //Copio desde la memoria el bloque
-                                for (int i = 0; i < 4; ++i)
-                                {
-                                    procesadores.ElementAt(0).memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[i, ubicacion[2]];
-                                    ++posicionMemoriaCompartida;
-                                }
-
-
-                            }
-                        }
-                        finally
-                        {
-                            Monitor.Exit(procesadores.ElementAt(0).directorio);
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
-                }
-                else if (numDirectorio == 2)
-                {
-                    if (Monitor.TryEnter(procesadores.ElementAt(1).directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
-
-
-
-                            //Verifico si alguna caché lo tiene modificado
-                            datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                            if (datosBloqueModificado[0] == 1)
-                            {
-                                //Se solicita la caché externa
-                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], 1))
-                                {
-
-                                }
-                                else
-                                {
-                                    //SE LIBERAN LAS COSAS
-                                }
-                            }
-                            else
-                            {
-                                //Copio desde la memoria el bloque
-                                for (int i = 0; i < 4; ++i)
-                                {
-                                    procesadores.ElementAt(1).memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[i, ubicacion[2]];
-                                    ++posicionMemoriaCompartida;
-                                }
-
-
-                            }
-                        }
-                        finally
-                        {
-                            Monitor.Exit(procesadores.ElementAt(1).directorio);
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
-                }
-                else
-                {
-                    if (Monitor.TryEnter(directorio))
-                    {
-                        try
-                        {
-                            bloqueo = true;
-
-
-
-                            //Verifico si alguna caché lo tiene modificado
-                            datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
-                            if (datosBloqueModificado[0] == 1)
-                            {
-                                //Se solicita la caché externa
-                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], datosBloqueModificado[2], datosBloqueModificado[3], 1))
-                                {
-
-                                }
-                                else
-                                {
-                                    //SE LIBERAN LAS COSAS
-                                }
-                            }
-                            else
-                            {
-                                //Copio desde la memoria el bloque
-                                for (int i = 0; i < 4; ++i)
-                                {
-                                    memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[i, ubicacion[2]];
-                                    ++posicionMemoriaCompartida;
-                                }
-
-
-                            }
-
-                        }
-                        finally
-                        {
-                            Monitor.Exit(directorio);
-                        }
-                    }
-                    else
-                    {
-                        bloqueo = false;
-                    }
+                    bloqueo = false;
                 }
             }
 
             return bloqueo;
         }
+
 
         /* Método que indica si en el directorio ya ninguna caché está utilizando el bloque */
         public bool bloqueLibre(int[,] dir, int posicionBloque)
