@@ -16,7 +16,7 @@ namespace proyectoArqui
 
 
         //Memoria compartida del procesador
-        private const int cantidadMC = 32;
+        public const int cantidadMC = 32;
         public int[] memoriaCompartida = new int[cantidadMC];
         //    public static int[] memoriaCompartida1 = new int[cantidadMC];
         //   public static int[] memoriaCompartida2 = new int[cantidadMC];
@@ -118,7 +118,6 @@ namespace proyectoArqui
         public List<Procesador> procesadores = new List<Procesador>();
 
 
-
         /*Método para pruebas que imprime en el debugger la memoria del procesador*/
         public void imprimirMemoria()
         {
@@ -133,6 +132,17 @@ namespace proyectoArqui
             {
                 Debug.WriteLine(contexto[i, 32]);
             }
+        }
+
+        public string getMemoriaCompartida()
+        {
+            string retorno = "";
+
+            for (int i = 0; i < cantidadMC; i++)
+            {
+                retorno = retorno + memoriaCompartida[i] + " ";
+            }
+            return retorno;
         }
 
         /*Método para obtener el nombre de los hilos ejecutados en el procesador*/
@@ -842,6 +852,7 @@ namespace proyectoArqui
                             hit = false;
                             if (ubicacion[0] <= 7) //El bloque pertenece al procesador 1
                             {
+                                Debug.WriteLine("bloque inválido en fallo de cache load, pertenece al procesador 1");
                                 if (solicitarDirectorioFallo_SW(datosHilos[filaContextoActual, 4], 1, cacheDatos[4, ubicacion[2]], hit))
                                 {
                                     /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
@@ -860,7 +871,7 @@ namespace proyectoArqui
                             }
                             else if (ubicacion[0] <= 15) //El bloque pertenece al procesador 2
                             {
-                                if (solicitarDirectorioFallo_SW(datosHilos[filaContextoActual, 4], 2, cacheDatos[4, ubicacion[2]], hit))
+                                if (solicitarDirectorioFallo_SW(datosHilos[filaContextoActual, 4], 2, cacheDatos[4, ubicacion[2]]-8, hit))
                                 {
                                     /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
                                     palabra = direccionMemoria % 16;
@@ -878,7 +889,7 @@ namespace proyectoArqui
                             }
                             else //El bloque pertenece al procesador 3
                             {
-                                if (solicitarDirectorioFallo_SW(datosHilos[filaContextoActual, 4], 3, cacheDatos[4, ubicacion[2]], hit))
+                                if (solicitarDirectorioFallo_SW(datosHilos[filaContextoActual, 4], 3, cacheDatos[4, ubicacion[2]]-16, hit))
                                 {
                                     /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
                                     palabra = direccionMemoria % 16;
@@ -1086,6 +1097,8 @@ namespace proyectoArqui
             int contadorCachesSolicitadas = 0;
             int[] datosBloqueModificado = new int[4];
             int posicionProcesador = 0;
+            Debug.WriteLine("soy el procesador " + numProcesadorLocal);
+            Debug.WriteLine("posicion de mem en solicitar directorio fallo es: " + posicionMemoriaCompartida);
    
             if (numProcesadorLocal == numDirectorio) 
             {
@@ -2380,10 +2393,11 @@ namespace proyectoArqui
                         bloqueo = true;
 
                         //Copio en memoria el contenido del bloque víctima 
+                        int contadorMem = posicionMemoriaCompartida * 4;
                         for (int i = 0; i < 4; ++i)
                         {
-                            procesadores.ElementAt(numCache).memoriaCompartida[posicionMemoriaCompartida] = procesadores.ElementAt(numCache).cacheDatos[i, ubicacion[2]];
-                            ++posicionMemoriaCompartida;
+                            procesadores.ElementAt(numCache).memoriaCompartida[contador] = procesadores.ElementAt(numCache).cacheDatos[i, ubicacion[2]];
+                            ++contadorMem;
                         }
 
 

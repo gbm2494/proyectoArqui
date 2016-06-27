@@ -61,6 +61,8 @@
             this.label17 = new System.Windows.Forms.Label();
             this.label18 = new System.Windows.Forms.Label();
             this.cmbHilosP3 = new System.Windows.Forms.ComboBox();
+            this.listMemoriaCompartida = new System.Windows.Forms.ListBox();
+            this.label9 = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -426,11 +428,33 @@
             this.cmbHilosP3.TabIndex = 5;
             this.cmbHilosP3.SelectedIndexChanged += new System.EventHandler(this.cmbHilosP3_SelectedIndexChanged);
             // 
+            // listMemoriaCompartida
+            // 
+            this.listMemoriaCompartida.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.listMemoriaCompartida.FormattingEnabled = true;
+            this.listMemoriaCompartida.ItemHeight = 15;
+            this.listMemoriaCompartida.Location = new System.Drawing.Point(33, 492);
+            this.listMemoriaCompartida.Name = "listMemoriaCompartida";
+            this.listMemoriaCompartida.Size = new System.Drawing.Size(670, 64);
+            this.listMemoriaCompartida.TabIndex = 14;
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label9.Location = new System.Drawing.Point(30, 473);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(134, 16);
+            this.label9.TabIndex = 13;
+            this.label9.Text = "Memoria Compartida";
+            // 
             // Resultados
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(752, 471);
+            this.ClientSize = new System.Drawing.Size(752, 577);
+            this.Controls.Add(this.label9);
+            this.Controls.Add(this.listMemoriaCompartida);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
@@ -446,6 +470,7 @@
             this.groupBox3.ResumeLayout(false);
             this.groupBox3.PerformLayout();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -484,6 +509,8 @@
         private System.Windows.Forms.Label label17;
         private System.Windows.Forms.Label label18;
         private System.Windows.Forms.ComboBox cmbHilosP3;
+        private System.Windows.Forms.ListBox listMemoriaCompartida;
+        private System.Windows.Forms.Label label9;
 
     }
 }

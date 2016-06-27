@@ -264,6 +264,14 @@ namespace proyectoArqui
                 hiloProcesador1.Join();
                 hiloProcesador2.Join();
                 hiloProcesador3.Join();
+
+                Debug.WriteLine("Memoria compartida del proc 1");
+
+                string memoriaCompartida = procesador1.getMemoriaCompartida();
+                memoriaCompartida = memoriaCompartida + procesador2.getMemoriaCompartida();
+                memoriaCompartida = memoriaCompartida + procesador3.getMemoriaCompartida();
+
+
         }
 
         /*Método para obtener el nombre de todos los hilos que tengan el procesador con el id recibido por parámetro*/

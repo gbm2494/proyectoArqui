@@ -54,6 +54,7 @@ namespace proyectoArqui
                         controlador = new Controladora(rutaHilos, cantidadHilos, valorQuantum);
                         controlador.llenarMemoria_Contexto();
                         llenarInterfaz();
+                        
                     }
                     /*cantidad de hilos es mayor a 12, no puede ser ejecutado en la simulación*/
                     else if (cantidadHilos > 12)
@@ -87,6 +88,8 @@ namespace proyectoArqui
             string registros = "R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R13 R14 R15 R16 R17 R18 R19 R20 R21 R22 R23 R24 R25 R26 R27 R28 R29 R30 R31 R32";
             string[] regs = registros.Split(' ');
 
+            string memoriaCompartida = "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32";
+
             /*Se cargan los registros iniciales en los 3 procesadores*/
             for (int i = 0; i < regs.Length; i++)
             {
@@ -96,6 +99,11 @@ namespace proyectoArqui
                     listRegistrosP2.Items.Add(regs[i]);
                     listRegistrosP3.Items.Add(regs[i]);
                 }
+            }
+
+            for (int i = 0; i < 3; i++)
+            {
+                listMemoriaCompartida.Items.Add(memoriaCompartida);
             }
 
             /*Se obtiene el nombre de los hilos para cada procesador y son cargados en los combobox*/
