@@ -16,7 +16,7 @@ namespace proyectoArqui
 
 
         //Memoria compartida del procesador
-        public const int cantidadMC = 32;
+        public const int cantidadMC = 128;
         public int[] memoriaCompartida = new int[cantidadMC];
         //    public static int[] memoriaCompartida1 = new int[cantidadMC];
         //   public static int[] memoriaCompartida2 = new int[cantidadMC];
@@ -77,6 +77,9 @@ namespace proyectoArqui
         //vector para almacenar el número de bloque, palabra e indice a partir de la lectura del PC
         private int[] ubicacion = new int[3];
 
+        //vector para almacenar el número de bloque, palabra e índice a partir de la dirección donde se desea realizar la lectura o escritura
+        private int[] ubicacionMem = new int[3];
+
         //Memoria principal del procesador, comienza en 128
         public const int cantidadMemoria = 256;
         public int[] memoria = new int[cantidadMemoria];
@@ -116,6 +119,11 @@ namespace proyectoArqui
         readonly int invalido = 3; //Invalido
 
         public List<Procesador> procesadores = new List<Procesador>();
+
+        // Variables que almacenan el inicio de la memoria compartida de cada procesador
+        readonly int inicioMemProcesador1 = 0;
+        readonly int inicioMemProcesador2 = 128;
+        readonly int inicioMemProcesador3 = 256;
 
 
         /*Método para pruebas que imprime en el debugger la memoria del procesador*/
@@ -407,6 +415,15 @@ namespace proyectoArqui
             //Variable que almacenará el tipo de operación de acuerdo al código de la misma
             string operando;
 
+            //Variable para guardar el número del bloque en la memoria compartida
+            int numBloqueMemComp = 0;
+
+            //Variable para guardar la posición en la caché de datos
+            int posicionCacheDatos = 0;
+
+            //Variable para guardar el número de la dirección donde inicia el bloque en la memoria compartida
+            int numDireccionMemComp = 0;
+
             /* Variable utilizada para conocer el número de fila donde se encuentra la palabra que se desea ejecutar, Ubicacion[1] 
             posee el número de palabra a ejecutar */
             int contadorFilas = ubicacion[1];
@@ -480,12 +497,21 @@ namespace proyectoArqui
                         break;
 
                     case "LW":
-                        direccionMemoria = 0;                       
-                        //Se calcula la direccion de memoria
-                        
+                        direccionMemoria = 0;  
+                     
+                        //Se calcula la direccion de memoria                      
                         direccionMemoria = registros[cache[contadorFilas, ubicacion[2] * 4 + 1]] + cache[contadorFilas, ubicacion[2] * 4 + 3];
                         
-                        while (bloquearCacheLW(direccionMemoria, cache[contadorFilas, ubicacion[2] * 4 + 2]) == false)
+                        //Se calcula en número de bloque en memoria compartida
+                        numBloqueMemComp = direccionMemoria / 16;
+
+                        //Se calcula la posición en donde debería estar el bloque en la caché de datos
+                        posicionCacheDatos = numBloqueMemComp % 4;
+
+                        //Se calcula la dirección dónde se ubica el bloque en la memoria compartida
+                        numDireccionMemComp = numBloqueMemComp * 16;
+
+                        while (bloquearCacheLW(direccionMemoria, cache[contadorFilas, ubicacion[2] * 4 + 2], numBloqueMemComp, posicionCacheDatos, numDireccionMemComp) == false)
                         {
                             //Aumentar ciclos
                         }
@@ -531,44 +557,52 @@ namespace proyectoArqui
             }
         }
 
-        public bool bloquearCacheLW(int direccionMemoria, int numRegistro)
+        public bool bloquearCacheLW(int direccionMemoria, int numRegistro, int numBloque, int posicionCache, int numDireccionMemComp )
         {
             int palabra = 0;
             bool bloqueo = false;
+            int numDirectorioCasa = 0;
+            int numDirectorioBloqueVictima = 0;
+            int posicionMemBloqueVictima = 0;
+            int posicionMemBloque = 0;
+            int posicionDirectorioBloqueVictima = 0;
+            int posicionDirectorioBloque = 0;
+            int numBloqueVictima = 0;
             // Solicita bloquear la caché
             if (Monitor.TryEnter(cacheDatos))
             {
                 try
                 {
                     bloqueo = true;
+                    numDirectorioCasa = (numBloque / 8) + 1;
 
                     //Se verifica si en la caché de datos se ubica el bloque leido
-                    if (cacheDatos[4, ubicacion[2]] == ubicacion[0])
+                    if (cacheDatos[4, posicionCache] == numBloque)
                     {
                         //Se verifica si está modificado o compartido
-                        if (cacheDatos[4, ubicacion[2]] == modificado || cacheDatos[4, ubicacion[2]] == compartido)
+                        if (cacheDatos[4, posicionCache] == modificado || cacheDatos[4, posicionCache] == compartido)
                         {
                             /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
                             palabra = direccionMemoria % 16;
                             palabra = palabra / 4;
 
                             //Se realiza la lectura
-                            registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
+                            registros[numRegistro] = cacheDatos[palabra, posicionCache];
 
                             bloqueo = true;
                         }
                         else //Se encuentra el bloque en la caché de datos pero inválido
                         {
-                            if (ubicacion[0] <= 7) //Pertenece al procesador 1
+                            if (numBloque <= 7) //Pertenece al procesador 1
                             {
-                                if (solicitarDirectorioDiagrama1_LW(datosHilos[filaContextoActual, 4], 1, cacheDatos[4, ubicacion[2]]))
+                                if (solicitarDirectorioDiagrama1_LW(datosHilos[filaContextoActual, 4], numDirectorioCasa, numBloque, numDireccionMemComp - inicioMemProcesador1, posicionCache))
                                 {
                                     /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
                                     palabra = direccionMemoria % 16;
                                     palabra = palabra / 4;
 
                                     //Se realiza la lectura
-                                    registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
+                                    registros[numRegistro] = cacheDatos[palabra, posicionCache];
 
                                     bloqueo = true;
                                 }
@@ -577,16 +611,16 @@ namespace proyectoArqui
                                     bloqueo = false;
                                 }
                             }
-                            else if (ubicacion[0] > 7 && ubicacion[0] <= 15) //Pertenece al procesador 2
+                            else if (numBloque > 7 && numBloque <= 15) //Pertenece al procesador 2
                             {
-                                if (solicitarDirectorioDiagrama1_LW(datosHilos[filaContextoActual, 4], 2, cacheDatos[4, ubicacion[2]]))
+                                if (solicitarDirectorioDiagrama1_LW(datosHilos[filaContextoActual, 4], numDirectorioCasa, numBloque, numDireccionMemComp - inicioMemProcesador1, posicionCache))
                                 {
                                     /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
                                     palabra = direccionMemoria % 16;
                                     palabra = palabra / 4;
 
                                     //Se realiza la lectura
-                                    registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
+                                    registros[numRegistro] = cacheDatos[palabra, posicionCache];
 
                                     bloqueo = true;
 
@@ -598,14 +632,14 @@ namespace proyectoArqui
                             }
                             else //Pertenece al procesador 3
                             {
-                                if (solicitarDirectorioDiagrama1_LW(datosHilos[filaContextoActual, 4], 3, cacheDatos[4, ubicacion[2]]))
+                                if (solicitarDirectorioDiagrama1_LW(datosHilos[filaContextoActual, 4], numDirectorioCasa, numBloque, numDireccionMemComp - inicioMemProcesador1, posicionCache))
                                 {
                                     /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
                                     palabra = direccionMemoria % 16;
                                     palabra = palabra / 4;
 
                                     //Se realiza la lectura
-                                    registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
+                                    registros[numRegistro] = cacheDatos[palabra, posicionCache];
 
                                     bloqueo = true;
 
@@ -620,20 +654,25 @@ namespace proyectoArqui
                     }
 
                     //Se verifica si el bloque víctima está modificado o compartido
-                    else if (cacheDatos[5, ubicacion[2]] == modificado || cacheDatos[5, ubicacion[2]] == compartido)
+                    else if (cacheDatos[5, posicionCache] == modificado || cacheDatos[5, posicionCache] == compartido)
                     {
-                        //El bloque pertenece al procesador 1
-                        if (cacheDatos[3, ubicacion[2]] <= 7)
+
+                        numBloqueVictima = cacheDatos[4, posicionCache];
+                        numDirectorioBloqueVictima = (numBloqueVictima / 8) + 1;
+                        posicionMemBloqueVictima = numBloqueVictima * 16;
+
+                        //El bloque víctima pertenece al procesador 1
+                        if (numBloqueVictima <= 7)
                         {
                             //número de procesador, número de directorio, posición en memoria del número de bloque
-                            if (solicitarDirectorioDiagrama3_LW(datosHilos[filaContextoActual, 4], 1, cacheDatos[4, ubicacion[2]]))
+                            if (solicitarDirectorioDiagrama3_LW(datosHilos[filaContextoActual, 4], numDirectorioBloqueVictima, numDirectorioCasa, numBloqueVictima, numBloque, posicionMemBloqueVictima, posicionMemBloque, posicionCache))
                             {
                                 /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
                                 palabra = direccionMemoria % 16;
                                 palabra = palabra / 4;
 
                                 //Se realiza la lectura
-                                registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
+                                registros[numRegistro] = cacheDatos[palabra, posicionCache];
 
                                 bloqueo = true;
 
@@ -644,17 +683,17 @@ namespace proyectoArqui
                             }
                         }
                         //El bloque pertenece al procesador 2
-                        else if (cacheDatos[3, ubicacion[2]] > 7 && cacheDatos[3, ubicacion[2]] <= 15)
+                        else if (numBloqueVictima > 7 && numBloqueVictima <= 15)
                         {
                             //número de procesador, número de directorio, posición en memoria del número de bloque
-                            if (solicitarDirectorioDiagrama3_LW(datosHilos[filaContextoActual, 4], 2, cacheDatos[4, ubicacion[2]] - 8))
+                            if (solicitarDirectorioDiagrama3_LW(datosHilos[filaContextoActual, 4], numDirectorioBloqueVictima, numDirectorioCasa, numBloqueVictima, numBloque, posicionMemBloqueVictima, posicionMemBloque, posicionCache))
                             {
                                 /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
                                 palabra = direccionMemoria % 16;
                                 palabra = palabra / 4;
 
                                 //Se realiza la lectura
-                                registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
+                                registros[numRegistro] = cacheDatos[palabra, posicionCache];
 
                                 bloqueo = true;
                             }
@@ -667,14 +706,14 @@ namespace proyectoArqui
                         else
                         {
                             //número de procesador, número de directorio, posición en memoria del número de bloque
-                            if (solicitarDirectorioDiagrama3_LW(datosHilos[filaContextoActual, 4], 3, cacheDatos[4, ubicacion[2]] - 16))
+                            if (solicitarDirectorioDiagrama3_LW(datosHilos[filaContextoActual, 4], numDirectorioBloqueVictima, numDirectorioCasa, numBloqueVictima, numBloque, posicionMemBloqueVictima, posicionMemBloque, posicionCache))
                             {
                                 /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
                                 palabra = direccionMemoria % 16;
                                 palabra = palabra / 4;
 
                                 //Se realiza la lectura
-                                registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
+                                registros[numRegistro] = cacheDatos[palabra, posicionCache];
 
                                 bloqueo = true;
                             }
@@ -685,16 +724,17 @@ namespace proyectoArqui
                         }
                     }
                     //En caso de no estar modificado ni compartido, se solicita el directorio correspondiente del bloque que se va a leer
-                    else if (ubicacion[0] <= 7) //Pertenece al procesador 1
+
+                    else if (numBloque <= 7) //Pertenece al procesador 1
                     {
-                        if (solicitarDirectorioDiagrama1_LW(datosHilos[filaContextoActual, 4], 1, cacheDatos[4, ubicacion[2]]))
+                        if (solicitarDirectorioDiagrama1_LW(datosHilos[filaContextoActual, 4], numDirectorioCasa, numBloque, numDireccionMemComp - inicioMemProcesador1, posicionCache))
                         {
                             /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
                             palabra = direccionMemoria % 16;
                             palabra = palabra / 4;
 
                             //Se realiza la lectura
-                            registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
+                            registros[numRegistro] = cacheDatos[palabra, posicionCache];
 
                             bloqueo = true;
                         }
@@ -703,16 +743,16 @@ namespace proyectoArqui
                             bloqueo = false;
                         }
                     }
-                    else if (ubicacion[0] > 7 && ubicacion[0] <= 15) //Pertenece al procesador 2
+                    else if (numBloque > 7 && numBloque <= 15) //Pertenece al procesador 2
                     {
-                        if (solicitarDirectorioDiagrama1_LW(datosHilos[filaContextoActual, 4], 2, cacheDatos[4, ubicacion[2]]))
+                        if (solicitarDirectorioDiagrama1_LW(datosHilos[filaContextoActual, 4], numDirectorioCasa, numBloque, numDireccionMemComp - inicioMemProcesador2, posicionCache))
                         {
                             /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
                             palabra = direccionMemoria % 16;
                             palabra = palabra / 4;
 
                             //Se realiza la lectura
-                            registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
+                            registros[numRegistro] = cacheDatos[palabra, posicionCache];
 
                             bloqueo = true;
 
@@ -724,14 +764,14 @@ namespace proyectoArqui
                     }
                     else //Pertenece al procesador 3
                     {
-                        if (solicitarDirectorioDiagrama1_LW(datosHilos[filaContextoActual, 4], 3, cacheDatos[4, ubicacion[2]]))
+                        if (solicitarDirectorioDiagrama1_LW(datosHilos[filaContextoActual, 4], numDirectorioCasa, numBloque, numDireccionMemComp - inicioMemProcesador3, posicionCache))
                         {
                             /*Calcula la palabra a leer de acuerdo a la dirección de memoria*/
                             palabra = direccionMemoria % 16;
                             palabra = palabra / 4;
 
                             //Se realiza la lectura
-                            registros[numRegistro] = cacheDatos[palabra, ubicacion[2]];
+                            registros[numRegistro] = cacheDatos[palabra, posicionCache];
 
                             bloqueo = true;
 
@@ -1060,30 +1100,30 @@ namespace proyectoArqui
         }
 
         /*Método que copia desde la memoria el contenido del bloque a la caché de datos */
-        public void copiarBloqueDesdeMemoria(int[] memCompartida, int posicionMemoria, int tipoOperacion)
+        public void copiarBloqueDesdeMemoria(int[] memCompartida, int posicionMemoria, int posicionCache, int tipoOperacion)
         {
             //Copio en la caché de datos el bloque que se escribirá 
             int contador = posicionMemoria;
             for (int i = 0; i < 4; ++i)
             {
-                cacheDatos[i, ubicacion[2]] = memCompartida[contador];
+                cacheDatos[i, posicionCache] = memCompartida[contador];
                 ++contador;
             }
 
             //Se establece el número del bloque en la caché de datos 
-            cacheDatos[4, ubicacion[2]] = ubicacion[0];
+            cacheDatos[4, posicionCache] = ubicacion[0];
 
             //1 significa store
             if (tipoOperacion == 1)
             {
                 //Se establece el estado del bloque en la caché de datos 
-                cacheDatos[5, ubicacion[2]] = modificado;
+                cacheDatos[5, posicionCache] = modificado;
             }
             //0 significa load
             else if (tipoOperacion == 0)
             {
                 //Se establece el estado del bloque en la caché de datos 
-                cacheDatos[5, ubicacion[2]] = compartido;
+                cacheDatos[5, posicionCache] = compartido;
             }
             
         }
@@ -1139,7 +1179,7 @@ namespace proyectoArqui
                                 {
 
                                     //Se copia desde la memoria el contenido del bloque a la caché de datos
-                                    copiarBloqueDesdeMemoria(memoria, ubicacion[0] * 4, 1);
+         //                          copiarBloqueDesdeMemoria(memoria, ubicacion[0] * 4, 1);
 
                                     //Se actualiza el estado del bloque en el directorio
                                     directorio[posicionBloque, 1] = modificado;
@@ -1184,7 +1224,7 @@ namespace proyectoArqui
                             else //El bloque no se encuentra ni compartido ni modificado
                             {
                                 //Se copia desde la memoria el contenido del bloque a la caché de datos
-                                copiarBloqueDesdeMemoria(memoria, ubicacion[0] * 4, 1);
+           //                     copiarBloqueDesdeMemoria(memoria, ubicacion[0] * 4, 1);
 
                                 //Se actualiza el estado del bloque en el directorio
                                 directorio[posicionBloque, 1] = modificado;
@@ -1266,7 +1306,7 @@ namespace proyectoArqui
                                 {
 
                                     //Se copia desde la memoria el contenido del bloque a la caché de datos
-                                    copiarBloqueDesdeMemoria(procesadores.ElementAt(posicionProcesador).memoriaCompartida, ubicacion[0] * 4, 1);
+          //                          copiarBloqueDesdeMemoria(procesadores.ElementAt(posicionProcesador).memoriaCompartida, ubicacion[0] * 4, 1);
 
                                     //Se actualiza el estado del bloque en el directorio
                                     procesadores.ElementAt(posicionProcesador).directorio[posicionBloque, 1] = modificado;
@@ -1311,7 +1351,7 @@ namespace proyectoArqui
                             else //El bloque no se encuentra ni compartido ni modificado
                             {
                                 //Se copia desde la memoria el contenido del bloque a la caché de datos
-                                copiarBloqueDesdeMemoria(procesadores.ElementAt(posicionProcesador).memoriaCompartida, ubicacion[0] * 4, 1);
+     //                           copiarBloqueDesdeMemoria(procesadores.ElementAt(posicionProcesador).memoriaCompartida, ubicacion[0] * 4, 1);
 
                                 //Se actualiza el estado del bloque en el directorio
                                 procesadores.ElementAt(posicionProcesador).directorio[posicionBloque, 1] = modificado;
@@ -1407,7 +1447,7 @@ namespace proyectoArqui
                     if (contadorCaches == contadorCachesSolicitadas)
                     {
 
-                        copiarBloqueDesdeMemoria(memCompartida, ubicacion[0] * 4, 1);
+   //                     copiarBloqueDesdeMemoria(memCompartida, ubicacion[0] * 4, 1);
 
                         //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
                         dir[numBloque, numProcesadorLocal + 1] = 1;
@@ -1420,7 +1460,7 @@ namespace proyectoArqui
                 }
                 else //Ninguna caché tenía el bloque modificado o compartido, se realiza la lectura del bloque desde la memoria
                 {
-                    copiarBloqueDesdeMemoria(memCompartida, ubicacion[0] * 4, 1);
+//                    copiarBloqueDesdeMemoria(memCompartida, ubicacion[0] * 4, 1);
 
                     //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
                     dir[numBloque, numProcesadorLocal + 1] = 1;
@@ -1491,7 +1531,7 @@ namespace proyectoArqui
                                 if (contadorCaches == contadorCachesSolicitadas)
                                 {
 
-                                    copiarBloqueDesdeMemoria(memCompartida, ubicacion[0] * 4, 1);
+    //                                copiarBloqueDesdeMemoria(memCompartida, ubicacion[0] * 4, 1);
 
                                     //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
                                     dir[numBloque, numProcesadorLocal + 1] = 1;
@@ -1504,7 +1544,7 @@ namespace proyectoArqui
                             }
                             else //Ninguna caché tenía el bloque modificado o compartido, se realiza la lectura del bloque desde la memoria
                             {
-                                copiarBloqueDesdeMemoria(memCompartida, ubicacion[0] * 4, 1);
+  //                              copiarBloqueDesdeMemoria(memCompartida, ubicacion[0] * 4, 1);
 
                                 //Se actualiza la entrada en el directorio correspondiente al procesador que posee el bloque
                                 dir[numBloque, numProcesadorLocal + 1] = 1;
@@ -2570,10 +2610,10 @@ namespace proyectoArqui
 
 
         //Método para solicitar la caché de datos de otro procesador
-        public bool solicitarCacheExterna(int numProcesadorLocal, int numCacheCasa, int posicionMemoriaCompartida, int numBloque, int accion)
+        public bool solicitarCacheExterna(int numProcesadorLocal, int numCacheCasa, int posicionMemoriaCompartida, int numBloque, int posicionCache, int[] memCompartida)
         {
             bool bloqueo = false;
-            int posicionBloque = posicionMemoriaCompartida;
+            int contador = 0;
             if (numProcesadorLocal == 1)
             {
                 if (Monitor.TryEnter(procesadores.ElementAt(numCacheCasa - 2).cacheDatos))
@@ -2583,21 +2623,20 @@ namespace proyectoArqui
                         bloqueo = true;
 
                         //Se copia en la memoria respectiva el contenido del bloque ubicado en la caché de datos del procesador 2 y en la caché del procesador 1
-                        int contador = posicionMemoriaCompartida*4;
+                        contador = posicionMemoriaCompartida;
                         for (int i = 0; i < 4; ++i)
                         {
-                            procesadores.ElementAt(numCacheCasa - 2).memoriaCompartida[contador] = procesadores.ElementAt(numCacheCasa - 2).cacheDatos[i, ubicacion[2]];
-                            cacheDatos[i, ubicacion[2]] = procesadores.ElementAt(numCacheCasa - 2).cacheDatos[i, ubicacion[2]];
+                            memCompartida[contador] = procesadores.ElementAt(numCacheCasa - 2).cacheDatos[i, posicionCache];
+                            cacheDatos[i, posicionCache] = procesadores.ElementAt(numCacheCasa - 2).cacheDatos[i, posicionCache];
                             ++contador;
                         }
 
                         //Actualiza el numero de bloque y el estado de ese bloque en la caché propia
-                        cacheDatos[4, ubicacion[2]] = numBloque;
-                        cacheDatos[5, ubicacion[2]] = compartido;
-
-                        
+                        cacheDatos[4, posicionCache] = numBloque;
+                        cacheDatos[5, posicionCache] = compartido;
+                      
                         //actualiza la entrada de la caché con compartido
-                        procesadores.ElementAt(numCacheCasa - 2).cacheDatos[5, ubicacion[2]] = compartido;
+                        procesadores.ElementAt(numCacheCasa - 2).cacheDatos[5, posicionCache] = compartido;
 
                         //realiza la lectura.
                     }
@@ -2624,23 +2663,22 @@ namespace proyectoArqui
                     try
                     {
                         bloqueo = true;
+                        contador = posicionMemoriaCompartida;
 
                         //Se copia en la memoria respectiva el contenido del bloque ubicado en la caché de datos del procesador 2 y en la caché del procesador 1
                         for (int i = 0; i < 4; ++i)
                         {
-                            procesadores.ElementAt(numCache).memoriaCompartida[posicionMemoriaCompartida] = procesadores.ElementAt(numCache).cacheDatos[i, ubicacion[2]];
-                            cacheDatos[i, ubicacion[2]] = procesadores.ElementAt(numCache).cacheDatos[i, ubicacion[2]];
-                            ++posicionMemoriaCompartida;
+                            memCompartida[contador] = procesadores.ElementAt(numCache).cacheDatos[i, posicionCache];
+                            cacheDatos[i, posicionCache] = procesadores.ElementAt(numCache).cacheDatos[i, posicionCache];
+                            ++contador;
                         }
 
                         //Actualiza el numero de bloque y el estado de ese bloque en la caché propia
-                        cacheDatos[4, ubicacion[2]] = numBloque;
-                        cacheDatos[5, ubicacion[2]] = compartido;
+                        cacheDatos[4, posicionCache] = numBloque;
+                        cacheDatos[5, posicionCache] = compartido;
 
-                        //actualiza la entrada del directorio con compartido
-                        procesadores.ElementAt(numCache).directorio[posicionBloque, 1] = compartido;
                         //actualiza la entrada de la caché con compartido
-                        procesadores.ElementAt(numCache).cacheDatos[5, ubicacion[2]] = compartido;
+                        procesadores.ElementAt(numCache).cacheDatos[5, posicionCache] = compartido;
 
                         //realiza la lectura.
                     }
@@ -2662,23 +2700,22 @@ namespace proyectoArqui
                     try
                     {
                         bloqueo = true;
-
+                        contador = posicionMemoriaCompartida;
                         //Se copia en la memoria respectiva el contenido del bloque ubicado en la caché de datos del procesador 2 y en la caché del procesador 1
                         for (int i = 0; i < 4; ++i)
                         {
-                            procesadores.ElementAt(numCacheCasa - 1).memoriaCompartida[posicionMemoriaCompartida] = procesadores.ElementAt(numCacheCasa - 1).cacheDatos[i, ubicacion[2]];
-                            cacheDatos[i, ubicacion[2]] = procesadores.ElementAt(numCacheCasa - 1).cacheDatos[i, ubicacion[2]];
-                            ++posicionMemoriaCompartida;
+                            memCompartida[contador] = procesadores.ElementAt(numCacheCasa - 1).cacheDatos[i, posicionCache];
+                            cacheDatos[i, posicionCache] = procesadores.ElementAt(numCacheCasa - 1).cacheDatos[i, posicionCache];
+                            ++contador;
                         }
 
                         //Actualiza el numero de bloque y el estado de ese bloque en la caché propia
-                        cacheDatos[4, ubicacion[2]] = numBloque;
-                        cacheDatos[5, ubicacion[2]] = compartido;
+                        cacheDatos[4, posicionCache] = numBloque;
+                        cacheDatos[5, posicionCache] = compartido;
 
-                        //actualiza la entrada del directorio con compartido
-                        procesadores.ElementAt(numCacheCasa - 1).directorio[posicionBloque, 1] = compartido;
+
                         //actualiza la entrada de la caché con compartido
-                        procesadores.ElementAt(numCacheCasa - 1).cacheDatos[5, ubicacion[2]] = compartido;
+                        procesadores.ElementAt(numCacheCasa - 1).cacheDatos[5, posicionCache] = compartido;
 
                         //realiza la lectura.
                     }
@@ -2698,25 +2735,26 @@ namespace proyectoArqui
         }
 
         /* Método para verificar el estado de un bloque en un load debido a un fallo */
-        public bool verificarEstadoBloqueFalloCache_LW(int numProcesadorLocal, int[,] dir, int[] memCompartida, int posicionMemoriaCompartida, bool dirSolicitado)
+        public bool verificarEstadoBloqueFalloCache_LW(int numProcesadorLocal, int[,] dir, int[] memCompartida, int posicionMemoriaCompartida, int posicionBloqueDirectorio, int posicionCacheDatos, bool dirSolicitado)
         {
             bool bloqueo = false;
-            int posicionBloque = posicionMemoriaCompartida;
             int[] datosBloqueModificado = new int[4];
-
 
             if(dirSolicitado)
             {
                 //Verifico si alguna caché lo tiene modificado
-                datosBloqueModificado = bloqueModificado(procesadores.ElementAt(0).directorio, posicionBloque);
+                datosBloqueModificado = bloqueModificado(procesadores.ElementAt(0).directorio, posicionBloqueDirectorio);
                 if (datosBloqueModificado[0] == 1)
                 {
+                
                     //Se solicita la caché externa
-                    if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionBloque, datosBloqueModificado[2], solicitudCacheDiagrama2_LW))
+                    if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionMemoriaCompartida, datosBloqueModificado[2], posicionCacheDatos, memCompartida))
                     {
                         //actualiza la entrada del directorio con compartido
-                        dir[posicionBloque, 1] = compartido;
-                        dir[posicionBloque, datosBloqueModificado[1] + 1] = 0;
+                        dir[posicionBloqueDirectorio, 1] = compartido;
+
+                        //Se actualiza la entrada del directorio del procesador que desea realizar la lectura
+                        dir[posicionBloqueDirectorio, numProcesadorLocal + 1] = 1;
 
                         bloqueo = true;
                     }
@@ -2728,12 +2766,14 @@ namespace proyectoArqui
                 }
                 else
                 {
-                    copiarBloqueDesdeMemoria(memCompartida, posicionBloque * 4, 0);
+                    copiarBloqueDesdeMemoria(memCompartida, posicionMemoriaCompartida, posicionCacheDatos, 0);
 
                     //Actualiza la entrada del estado de la caché en el directorio a "compartido" y 
                     //se indica que lo posee el procesador 1
-                    dir[posicionBloque, 1] = compartido;
-                    dir[posicionBloque, numProcesadorLocal+1] = 1;
+                    dir[posicionBloqueDirectorio, 1] = compartido;
+
+                    //Se actualiza la entrada del directorio del procesador que desea realizar la lectura
+                    dir[posicionBloqueDirectorio, numProcesadorLocal+1] = 1;
 
                     bloqueo = true;
 
@@ -2748,15 +2788,17 @@ namespace proyectoArqui
                        {
                            bloqueo = true;
                             //Verifico si alguna caché lo tiene modificado
-                            datosBloqueModificado = bloqueModificado(procesadores.ElementAt(0).directorio, posicionBloque);
+                            datosBloqueModificado = bloqueModificado(procesadores.ElementAt(0).directorio, posicionBloqueDirectorio);
                             if (datosBloqueModificado[0] == 1)
                             {
                                 //Se solicita la caché externa
-                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionBloque, datosBloqueModificado[2], solicitudCacheDiagrama2_LW))
+                                if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionMemoriaCompartida, datosBloqueModificado[2], posicionCacheDatos, memCompartida))
                                 {
                                     //actualiza la entrada del directorio con compartido
-                                    dir[posicionBloque, 1] = compartido;
-                                    dir[posicionBloque, datosBloqueModificado[1] + 1] = 0;
+                                    dir[posicionBloqueDirectorio, 1] = compartido;
+
+                                    //Se actualiza la entrada del directorio del procesador que desea realizar la lectura
+                                    dir[posicionBloqueDirectorio, numProcesadorLocal + 1] = 1;
 
                                     bloqueo = true;
                                 }
@@ -2768,12 +2810,14 @@ namespace proyectoArqui
                             }
                             else
                             {
-                                copiarBloqueDesdeMemoria(memCompartida, posicionBloque * 4, 0);
+                                copiarBloqueDesdeMemoria(memCompartida, posicionMemoriaCompartida, posicionCacheDatos, 0);
 
                                 //Actualiza la entrada del estado de la caché en el directorio a "compartido" y el procesador
                                 //que lo posee
-                                dir[posicionBloque, 1] = compartido;
-                                dir[posicionBloque, numProcesadorLocal+1] = 1;
+                                dir[posicionBloqueDirectorio, 1] = compartido;
+
+                                //Se actualiza la entrada del directorio del procesador que desea realizar la lectura
+                                dir[posicionBloqueDirectorio, numProcesadorLocal+1] = 1;
 
                                 bloqueo = true;
 
@@ -2795,24 +2839,26 @@ namespace proyectoArqui
            
         }
 
-        public bool verificarEstadoBloque_Diagrama3_LW(int numProcesadorLocal, int [,] dir, int[] memCompartida, int posicionMemoriaCompartida, bool directorioSolicitado)
+
+        public bool verificarEstadoBloque_Diagrama3_LW(int numProcesadorLocal, int [,] dir, int[] memCompartida, int posicionMemoriaCompartida, int numBloque, int posicionBloqueDirectorio, int posicionCache, bool directorioSolicitado)
         {
             bool bloqueo = false;
-            int posicionBloque = posicionMemoriaCompartida;
             int[] datosBloqueModificado = new int[4];
 
             if(directorioSolicitado)
             {
                 //Verifico si alguna caché lo tiene modificado
-                datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
+                datosBloqueModificado = bloqueModificado(directorio, posicionBloqueDirectorio);
                 if (datosBloqueModificado[0] == 1)
                 {
                     //Se solicita la caché externa
-                    if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionBloque, datosBloqueModificado[2], solicitudCacheDiagrama2_LW))
+                    if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionMemoriaCompartida, datosBloqueModificado[2], posicionCache, memCompartida))
                     {
                         //actualiza la entrada del directorio con compartido
-                        directorio[posicionBloque, 1] = compartido;
-                        directorio[posicionBloque, datosBloqueModificado[1] + 1] = 0;
+                        dir[posicionBloqueDirectorio, 1] = compartido;
+
+                        //Se actualiza la entrada del procesador que ahora ya realizará la lectura
+                        dir[posicionBloqueDirectorio, numProcesadorLocal + 1] = 1;
                     }
                     else
                     {
@@ -2823,12 +2869,14 @@ namespace proyectoArqui
                 else
                 {
                     //0 porque es un load
-                    copiarBloqueDesdeMemoria(memoriaCompartida, posicionBloque * 4, 0);
+                    copiarBloqueDesdeMemoria(memCompartida, posicionMemoriaCompartida, posicionCache, 0);
 
                     //Actualiza la entrada del estado de la caché en el directorio a "compartido" y 
                     //se indica cual procesador lo posee
-                    directorio[posicionBloque, 1] = compartido;
-                    directorio[posicionBloque, numProcesadorLocal + 1] = 1;
+                    dir[posicionBloqueDirectorio, 1] = compartido;
+
+                    //Se actualiza la entrada del procesador que ahora ya realizará la lectura
+                    dir[posicionBloqueDirectorio, numProcesadorLocal + 1] = 1;
 
                     bloqueo = true;
                 }
@@ -2841,15 +2889,19 @@ namespace proyectoArqui
                     {
                         bloqueo = true;
                         //Verifico si alguna caché lo tiene modificado
-                        datosBloqueModificado = bloqueModificado(directorio, posicionBloque);
+                        datosBloqueModificado = bloqueModificado(directorio, posicionBloqueDirectorio);
                         if (datosBloqueModificado[0] == 1)
                         {
                             //Se solicita la caché externa
-                            if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionBloque, datosBloqueModificado[2], solicitudCacheDiagrama2_LW))
+                            if (solicitarCacheExterna(datosHilos[filaContextoActual, 4], datosBloqueModificado[1], posicionMemoriaCompartida, datosBloqueModificado[2], posicionCache, memCompartida))
                             {
                                 //actualiza la entrada del directorio con compartido
-                                directorio[posicionBloque, 1] = compartido;
-                                directorio[posicionBloque, datosBloqueModificado[1] + 1] = 0;
+                                dir[posicionBloqueDirectorio, 1] = compartido;
+
+                                //Se actualiza la entrada del procesador que ahora ya realizará la lectura
+                                dir[posicionBloqueDirectorio, numProcesadorLocal + 1] = 1;
+
+                       
                             }
                             else
                             {
@@ -2860,12 +2912,12 @@ namespace proyectoArqui
                         else
                         {
                             //0 porque es un load
-                            copiarBloqueDesdeMemoria(memoriaCompartida, posicionBloque * 4, 0);
+                            copiarBloqueDesdeMemoria(memCompartida, posicionMemoriaCompartida, posicionCache, 0);
 
                             //Actualiza la entrada del estado de la caché en el directorio a "compartido" y 
                             //se indica cual procesador lo posee
-                            directorio[posicionBloque, 1] = compartido;
-                            directorio[posicionBloque, numProcesadorLocal+1] = 1;
+                            dir[posicionBloqueDirectorio, 1] = compartido;
+                            dir[posicionBloqueDirectorio, numProcesadorLocal+1] = 1;
 
                             bloqueo = true;
                         }
@@ -2886,20 +2938,47 @@ namespace proyectoArqui
         }
 
         //Método para solicitar un directorio externo
-        public bool solicitarDirectorioDiagrama3_LW(int numProcesadorLocal, int numDirectorio, int posicionMemoriaCompartida)
+        public bool solicitarDirectorioDiagrama3_LW(int numProcesadorLocal, int numDirectorioBloqueVictima, int numDirectorioCasa, int numBloqueVictima, int numBloque, int posMemBloqueVictima, int posMemBloque, int posicionCache )
         {
             bool bloqueo = false;
-            int posicionBloque = posicionMemoriaCompartida;
+            int posicionBloqueDirectorio = 0;
             bool liberarDirectorio = true;
             int posicionProcesador = 0;
             int posicionProcesadorDir = 0;
-
-            bool directorioSolicitado = false;
-            int numBloque = 0;
-
+            bool directorioSolicitado = false;           
             int[] datosBloqueModificado = new int[4];
+            int contador = 0;
+            int posicionBloqueDirectorioCasa = 0;
 
-            if (numProcesadorLocal == numDirectorio)
+            if(numBloqueVictima <= 7)
+            {
+                posicionBloqueDirectorio = numBloqueVictima;
+            }
+            else if(numBloqueVictima > 7 && numBloqueVictima <= 15)
+            {
+                posicionBloqueDirectorio = numBloqueVictima - 8;
+            }
+            else
+            {
+                posicionBloqueDirectorio = numBloqueVictima - 16;
+
+            }
+
+            if(numBloque <= 7)
+            {
+                posicionBloqueDirectorioCasa = numBloque;
+            }
+            else if(numBloque > 7 && numBloque <= 15)
+            {
+                 posicionBloqueDirectorioCasa = numBloque - 8;
+            }
+            else
+            {
+                 posicionBloqueDirectorioCasa = numBloque - 16;
+            }
+
+
+            if (numProcesadorLocal == numDirectorioBloqueVictima)
             {
 
                 if (Monitor.TryEnter(directorio))
@@ -2908,39 +2987,36 @@ namespace proyectoArqui
                     {
                         bloqueo = true;
 
-                        if (cacheDatos[5, ubicacion[2]] == modificado) //El bloque víctima se encuentra modificado
+                        if (cacheDatos[5, posicionCache] == modificado) //El bloque víctima se encuentra modificado
                         {
+                            contador = posMemBloqueVictima;
                             //Se copia en la memoria respectiva el contenido del bloque ubicado en la caché de datos
                             for (int i = 0; i < 4; ++i)
                             {
-                                memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[ubicacion[2], i];
-                                ++posicionMemoriaCompartida;
+                                memoriaCompartida[contador] = cacheDatos[i, posicionCache];
+                                ++contador;
                             }
 
                         }
 
                         //Se coloca en "uncached" la posición del bloque que será reemplazado y se actualiza la entrada del procesador que antes 
                         //tenía el bloque
-                        directorio[posicionBloque, numProcesadorLocal + 1] = 0;
-                        if (bloqueLibre(directorio, posicionBloque))
+                        directorio[posicionBloqueDirectorio, numProcesadorLocal + 1] = 0;
+                        if (bloqueLibre(directorio, posicionBloqueDirectorio))
                         {
-                            directorio[posicionBloque, 1] = uncached;
+                            directorio[posicionBloqueDirectorio, 1] = uncached;
                         }
 
-
                         //Se invalida la entrada en la caché de datos
-                        cacheDatos[5, ubicacion[2]] = invalido;
-
-                        //Se coloca el num del bloque
-                        numBloque = ubicacion[0];
+                        cacheDatos[5, posicionCache] = invalido;
 
                         //Se verifica si el bloque que se va a leer se encuentra en el mismo directorio
                         if(numProcesadorLocal == 1)
                         {
-                            if (ubicacion[0] <= 7) //El bloque que se leerá pertenece al procesador 1
+                            if (numBloque <= 7) //El bloque que se leerá pertenece al procesador 1
                             {
                               
-                                if (numDirectorio == 1)
+                                if (numDirectorioBloqueVictima == 1)
                                 {
                                     directorioSolicitado = true;
                                     liberarDirectorio = true;
@@ -2951,11 +3027,13 @@ namespace proyectoArqui
                                    
                                     //Libera su propio directorio 
                                     Monitor.Exit(directorio);
+
                                     liberarDirectorio = false;
                                     
                                 }
 
-                                if(verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, directorio, memoriaCompartida, numBloque, directorioSolicitado) )
+                                
+                                if(verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, directorio, memoriaCompartida, posMemBloque, numBloque, posicionBloqueDirectorioCasa, posicionCache, directorioSolicitado) )
                                 {
                                     bloqueo = true;
                                 }
@@ -2969,7 +3047,7 @@ namespace proyectoArqui
                             {
                                 if (numBloque <= 15) //El bloque a leer pertenece al segundo procesador
                                 {
-                                    if (numDirectorio == 2)
+                                    if (numDirectorioBloqueVictima == 2)
                                     {
                                         directorioSolicitado = true;
                                         liberarDirectorio = true;
@@ -2985,12 +3063,11 @@ namespace proyectoArqui
                                     }
 
                                     posicionProcesador = 0;
-                                    numBloque = numBloque - 8;
 
                                 }
                                 else //El bloque a leer pertenece al tercer procesador
                                 {
-                                    if (numDirectorio == 3)
+                                    if (numDirectorioBloqueVictima == 3)
                                     {
                                         directorioSolicitado = true;
                                         liberarDirectorio = true;
@@ -3003,11 +3080,11 @@ namespace proyectoArqui
                                         Monitor.Exit(directorio);
                                         liberarDirectorio = false;
                                     }
+
                                     posicionProcesador = 1;
-                                    numBloque = numBloque - 16;
                                 }
 
-                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesador).directorio, procesadores.ElementAt(posicionProcesador).memoriaCompartida, numBloque, directorioSolicitado))
+                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesador).directorio, procesadores.ElementAt(posicionProcesador).memoriaCompartida, posMemBloque, numBloque, posicionBloqueDirectorioCasa, posicionCache, directorioSolicitado))
                                 {
                                     bloqueo = true;
                                 }
@@ -3021,7 +3098,7 @@ namespace proyectoArqui
                         {
                             if (numBloque > 7 && numBloque <= 15) //El bloque que se escribirá pertenece al procesador 2
                             {
-                                if (numDirectorio == 2)
+                                if (numDirectorioBloqueVictima == 2)
                                 {
                                     directorioSolicitado = true;
                                     liberarDirectorio = true;
@@ -3033,10 +3110,8 @@ namespace proyectoArqui
                                     liberarDirectorio = false;
                                 }
 
-
-                                numBloque = numBloque - 8;
       
-                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesador).directorio, procesadores.ElementAt(posicionProcesador).memoriaCompartida, numBloque, directorioSolicitado))
+                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesador).directorio, procesadores.ElementAt(posicionProcesador).memoriaCompartida, posMemBloque, numBloque, posicionBloqueDirectorioCasa, posicionCache, directorioSolicitado))
                                 {
                                     bloqueo = true;
                                 }
@@ -3050,7 +3125,7 @@ namespace proyectoArqui
 
                                 if (numBloque <= 7) //El bloque a escribir pertenece al primer procesador
                                 {
-                                    if (numDirectorio == 1)
+                                    if (numDirectorioBloqueVictima == 1)
                                     {
                                         directorioSolicitado = true;
                                         liberarDirectorio = true;
@@ -3067,7 +3142,7 @@ namespace proyectoArqui
                                 }
                                 else //El bloque a escribir pertenece al tercer procesador
                                 {
-                                    if (numDirectorio == 3)
+                                    if (numDirectorioBloqueVictima == 3)
                                     {
                                         directorioSolicitado = true;
                                         liberarDirectorio = true;
@@ -3080,12 +3155,11 @@ namespace proyectoArqui
                                     }
 
                                     posicionProcesador = 1;
-                                    numBloque = numBloque - 16;
                                 }
 
                                 directorioSolicitado = false;
 
-                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesador).directorio, procesadores.ElementAt(posicionProcesador).memoriaCompartida, numBloque, directorioSolicitado))
+                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesador).directorio, procesadores.ElementAt(posicionProcesador).memoriaCompartida, posMemBloque, numBloque, posicionBloqueDirectorioCasa, posicionCache, directorioSolicitado))
                                 {
                                     bloqueo = true;
                                 }
@@ -3099,7 +3173,7 @@ namespace proyectoArqui
                         {
                             if (numBloque > 15) //El bloque que se escribirá pertenece al procesador 3
                             {
-                                if (numDirectorio == 3)
+                                if (numDirectorioBloqueVictima == 3)
                                 {
                                     directorioSolicitado = true;
                                     liberarDirectorio = true;
@@ -3111,11 +3185,7 @@ namespace proyectoArqui
                                     liberarDirectorio = false;
                                 }
 
-
-                                numBloque = numBloque - 16;
-           
-
-                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, directorio, memoriaCompartida, numBloque, directorioSolicitado))
+                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, directorio, memoriaCompartida, posMemBloque, numBloque, posicionBloqueDirectorioCasa, posicionCache, directorioSolicitado))
                                 {
                                     bloqueo = true;
                                 }
@@ -3127,10 +3197,9 @@ namespace proyectoArqui
                             else //Bloque a escribir pertenece al primero o al segundo procesador
                             {
 
-
                                 if (numBloque <= 7) //El bloque a escribir pertenece al segundo procesador
                                 {
-                                    if (numDirectorio == 1)
+                                    if (numDirectorioBloqueVictima == 1)
                                     {
                                         directorioSolicitado = true;
                                         liberarDirectorio = true;
@@ -3147,7 +3216,7 @@ namespace proyectoArqui
                                 }
                                 else //El bloque a escribir pertenece al segundo procesador
                                 {
-                                    if (numDirectorio == 2)
+                                    if (numDirectorioBloqueVictima == 2)
                                     {
                                         directorioSolicitado = true;
                                         liberarDirectorio = true;
@@ -3163,7 +3232,7 @@ namespace proyectoArqui
                                     numBloque = numBloque - 8;
                                 }
 
-                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesador).directorio, procesadores.ElementAt(posicionProcesador).memoriaCompartida, numBloque, directorioSolicitado))
+                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesador).directorio, procesadores.ElementAt(posicionProcesador).memoriaCompartida, posMemBloque, numBloque, posicionBloqueDirectorioCasa, posicionCache, directorioSolicitado))
                                 {
                                     bloqueo = true;
                                 }
@@ -3193,11 +3262,11 @@ namespace proyectoArqui
             {
                 if (numProcesadorLocal == 1) //Se está ejecutando el procesador 1
                 {
-                    posicionProcesador = numDirectorio - 2;
+                    posicionProcesador = numDirectorioBloqueVictima - 2;
                 }
                 else if (numProcesadorLocal == 2) //Se está ejecutando el procesador 2
                 {
-                    if (numDirectorio == 1)
+                    if (numDirectorioBloqueVictima == 1)
                     {
                         posicionProcesador = 0;
                     }
@@ -3209,7 +3278,7 @@ namespace proyectoArqui
                 }
                 else //Se está ejecutando el procesador 3
                 {
-                    posicionProcesador = numDirectorio - 1;
+                    posicionProcesador = numDirectorioBloqueVictima - 1;
                 }
 
                 if (Monitor.TryEnter(procesadores.ElementAt(posicionProcesador).directorio))
@@ -3220,35 +3289,36 @@ namespace proyectoArqui
                         liberarDirectorio = false;
 
 
-                        if (cacheDatos[5, ubicacion[2]] == modificado) //El bloque víctima se encuentra modificado
+                        if (cacheDatos[5, posicionCache] == modificado) //El bloque víctima se encuentra modificado
                         {
+                            contador = posMemBloqueVictima;
                             //Se copia en la memoria respectiva el contenido del bloque ubicado en la caché de datos
                             for (int i = 0; i < 4; ++i)
                             {
-                                procesadores.ElementAt(posicionProcesador).memoriaCompartida[posicionMemoriaCompartida] = cacheDatos[ubicacion[2], i];
-                                ++posicionMemoriaCompartida;
+                                procesadores.ElementAt(posicionProcesador).memoriaCompartida[contador] = cacheDatos[ubicacion[2], i];
+                                ++contador;
                             }
 
                         }
 
                         //Se coloca en "uncached" la posición del bloque que será reemplazado y se actualiza la entrada del procesador
-                        procesadores.ElementAt(posicionProcesador).directorio[posicionBloque, 2] = 0;
-                        if (bloqueLibre(procesadores.ElementAt(posicionProcesador).directorio, posicionBloque))
+                        procesadores.ElementAt(posicionProcesador).directorio[posicionBloqueDirectorio, 2] = 0;
+                        if (bloqueLibre(procesadores.ElementAt(posicionProcesador).directorio, posicionBloqueDirectorio))
                         {
-                            procesadores.ElementAt(posicionProcesador).directorio[posicionBloque, 1] = uncached;
+                            procesadores.ElementAt(posicionProcesador).directorio[posicionBloqueDirectorio, 1] = uncached;
                         }
 
 
                         //Se invalida la entrada en la caché de datos
-                        cacheDatos[5, ubicacion[2]] = invalido;
+                        cacheDatos[5, posicionCache] = invalido;
 
                         //Se verifica si el bloque que se va a leer se encuentra en el mismo directorio
                         if (numProcesadorLocal == 1)
                         {
-                            if (ubicacion[0] <= 7) //El bloque que se leerá pertenece al procesador 1
+                            if (numBloque <= 7) //El bloque que se leerá pertenece al procesador 1
                             {
 
-                                if (numDirectorio == 1)
+                                if (numDirectorioBloqueVictima == 1)
                                 {
                                     directorioSolicitado = true;
                                     liberarDirectorio = true;
@@ -3263,7 +3333,7 @@ namespace proyectoArqui
 
                                 }
 
-                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, directorio, memoriaCompartida, numBloque, directorioSolicitado))
+                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, directorio, memoriaCompartida, posMemBloque, numBloque, posicionBloqueDirectorioCasa, posicionCache, directorioSolicitado))
                                 {
                                     bloqueo = true;
                                 }
@@ -3277,7 +3347,7 @@ namespace proyectoArqui
                             {
                                 if (numBloque <= 15) //El bloque a leer pertenece al segundo procesador
                                 {
-                                    if (numDirectorio == 2)
+                                    if (numDirectorioBloqueVictima == 2)
                                     {
                                         directorioSolicitado = true;
                                         liberarDirectorio = true;
@@ -3293,12 +3363,10 @@ namespace proyectoArqui
                                     }
 
                                     posicionProcesadorDir = 0;
-                                    numBloque = numBloque - 8;
-
                                 }
                                 else //El bloque a leer pertenece al tercer procesador
                                 {
-                                    if (numDirectorio == 3)
+                                    if (numDirectorioBloqueVictima == 3)
                                     {
                                         directorioSolicitado = true;
                                         liberarDirectorio = true;
@@ -3311,11 +3379,12 @@ namespace proyectoArqui
                                         Monitor.Exit(procesadores.ElementAt(posicionProcesador).directorio);
                                         liberarDirectorio = false;
                                     }
+
                                     posicionProcesadorDir = 1;
-                                    numBloque = numBloque - 16;
+
                                 }
 
-                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesadorDir).directorio, procesadores.ElementAt(posicionProcesadorDir).memoriaCompartida, numBloque, directorioSolicitado))
+                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesadorDir).directorio, procesadores.ElementAt(posicionProcesadorDir).memoriaCompartida, posMemBloque, numBloque, posicionBloqueDirectorioCasa, posicionCache, directorioSolicitado))
                                 {
                                     bloqueo = true;
                                 }
@@ -3332,7 +3401,7 @@ namespace proyectoArqui
                                 numBloque = numBloque - 8;
                                 directorioSolicitado = true;
                                 liberarDirectorio = true;
-                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, directorio, memoriaCompartida, numBloque, directorioSolicitado))
+                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, directorio, memoriaCompartida, posMemBloque, numBloque, posicionBloqueDirectorioCasa, posicionCache, directorioSolicitado))
                                 {
                                     bloqueo = true;
                                 }
@@ -3346,6 +3415,7 @@ namespace proyectoArqui
 
                                 //Libera su propio directorio 
                                 Monitor.Exit(procesadores.ElementAt(posicionProcesador).directorio);
+
                                 liberarDirectorio = false;
 
                                 if (numBloque <= 7) //El bloque a escribir pertenece al segundo procesador
@@ -3356,12 +3426,11 @@ namespace proyectoArqui
                                 else //El bloque a escribir pertenece al tercer procesador
                                 {
                                     posicionProcesadorDir = 1;
-                                    numBloque = numBloque - 16;
                                 }
 
                                 directorioSolicitado = false;
 
-                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesadorDir).directorio, procesadores.ElementAt(posicionProcesadorDir).memoriaCompartida, numBloque, directorioSolicitado))
+                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesadorDir).directorio, procesadores.ElementAt(posicionProcesadorDir).memoriaCompartida, posMemBloque, numBloque, posicionBloqueDirectorioCasa, posicionCache, directorioSolicitado))
                                 {
                                     bloqueo = true;
                                 }
@@ -3379,7 +3448,7 @@ namespace proyectoArqui
                                 directorioSolicitado = true;
                                 liberarDirectorio = true;
 
-                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, directorio, memoriaCompartida, numBloque, directorioSolicitado))
+                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, directorio, memoriaCompartida, posMemBloque, numBloque, posicionBloqueDirectorioCasa, posicionCache, directorioSolicitado))
                                 {
                                     bloqueo = true;
                                 }
@@ -3408,7 +3477,7 @@ namespace proyectoArqui
 
                                 directorioSolicitado = false;
 
-                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesadorDir).directorio, procesadores.ElementAt(posicionProcesadorDir).memoriaCompartida, numBloque, directorioSolicitado))
+                                if (verificarEstadoBloque_Diagrama3_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesadorDir).directorio, procesadores.ElementAt(posicionProcesadorDir).memoriaCompartida, posMemBloque, numBloque, posicionBloqueDirectorioCasa, posicionCache, directorioSolicitado))
                                 {
                                     bloqueo = true;
                                 }
@@ -3437,19 +3506,32 @@ namespace proyectoArqui
             return bloqueo;
         }
 
-        public bool solicitarDirectorioDiagrama1_LW(int numProcesadorLocal, int numDirectorio, int posicionMemoriaCompartida)
+        public bool solicitarDirectorioDiagrama1_LW(int numProcesadorLocal, int numDirectorio, int numBloque, int posicionMemoriaCompartida, int posicionCacheDatos)
         {
             bool bloqueo = false;
-            int posicionBloque = posicionMemoriaCompartida;
+            int posicionBloqueDirectorio = 0;
             int[] datosBloqueModificado = new int[4];
             bool directorioSolicitado = false;
             int posicionProcesador = 0;
 
+            if(numDirectorio == 1)
+            {
+                posicionBloqueDirectorio = numBloque;
+            }
+            else if(numDirectorio == 2)
+            {
+                posicionBloqueDirectorio = numBloque - 8;
+            }
+            else
+            {
+                posicionBloqueDirectorio = numBloque - 16;
+            }
+
 
             if (numProcesadorLocal == numDirectorio)
             {
-                directorioSolicitado = true;
-                if (verificarEstadoBloque_FalloCacheSW(numProcesadorLocal, directorio, memoriaCompartida, posicionBloque, directorioSolicitado))
+                directorioSolicitado = false;
+                if (verificarEstadoBloqueFalloCache_LW(numProcesadorLocal, directorio, memoriaCompartida, posicionBloqueDirectorio, posicionMemoriaCompartida, posicionCacheDatos, directorioSolicitado))
                 {
                     bloqueo = true;
                 }
@@ -3481,8 +3563,8 @@ namespace proyectoArqui
                     posicionProcesador = numDirectorio - 1;
                 }
 
-                directorioSolicitado = true;
-                if (verificarEstadoBloque_FalloCacheSW(numProcesadorLocal, procesadores.ElementAt(posicionProcesador).directorio, procesadores.ElementAt(posicionProcesador).memoriaCompartida, posicionBloque, directorioSolicitado))
+                directorioSolicitado = false;
+                if (verificarEstadoBloqueFalloCache_LW(numProcesadorLocal, procesadores.ElementAt(posicionProcesador).directorio, procesadores.ElementAt(posicionProcesador).memoriaCompartida, posicionBloqueDirectorio, posicionMemoriaCompartida, posicionCacheDatos, directorioSolicitado))
                 {
                     bloqueo = true;
                 }

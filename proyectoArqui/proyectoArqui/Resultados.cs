@@ -52,6 +52,7 @@ namespace proyectoArqui
                     {
                         /*Si todo es válido se crea el objeto de tipo Controladora, se ejecuta la simulación y se muestran resultados*/
                         controlador = new Controladora(rutaHilos, cantidadHilos, valorQuantum);
+                        Debug.WriteLine("ENTRE AL IF DE RESULTADOS");
                         controlador.llenarMemoria_Contexto();
                         llenarInterfaz();
                         
@@ -69,6 +70,10 @@ namespace proyectoArqui
                         MessageBox.Show("La cantidad de hilos introducida por el usuario no coincide con la cantidad de archivos en la ruta especificada", "Error de archivos", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         inicio.Show();
                         this.Close();
+                    }
+                    else
+                    {
+                        Debug.WriteLine("NO ENTRE A NADA");
                     }
             }
             /*Si no existen archivos válidos en la carpeta*/

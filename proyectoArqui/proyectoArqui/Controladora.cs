@@ -87,6 +87,10 @@ namespace proyectoArqui
                     procesador3.quantum = quantum;
 
             }
+            else
+            {
+                Debug.WriteLine("NO SE TENIAN ARCHIVOS TXT EN CONTROLADOR");
+            }
         }
 
         /*Método en el cual se llenan las memorias de los procesadores y sus contextos. Además se inicializa el valor del reloj en cada uno de 
@@ -96,6 +100,8 @@ namespace proyectoArqui
             /*posicion en memoria de los tres procesadores*/
             int[] posicionMemoria = new int[totalProcesadores];
             int[] hiloActual = new int[totalProcesadores];
+
+            Debug.WriteLine("ENTRE A LLENAR MEMORIA DE CONTEXTO"); 
 
             //Se inicializa el contador en cero de la posición en memoria de cada procesador así como el id del hilo actual 
             for (int i = 0; i < totalProcesadores; i++)
@@ -213,6 +219,8 @@ namespace proyectoArqui
                 procesador1.ejecucionHilos[0, 0] = 1;
 
             }
+
+            Debug.WriteLine("LLEGUE AL FINAL DE memoria CONTEXTO");
              
              //Se inicia la ejecución de la simulación
              iniciarSimulacion();
@@ -221,6 +229,8 @@ namespace proyectoArqui
         /* Método que ejecuta la lectura y ejecución de las instrucciones de los hilillos ubicados en los hilos de tipo procesador */
         public void iniciarSimulacion()
         {
+            Debug.WriteLine("ENTRE A INICIAR SIMULACION");
+
             //Creación de los 3 hilos, uno para cada procesador
             Thread hiloProcesador1 = new Thread(new ThreadStart(procesador1.ejecutarInstrucciones));
             Thread hiloProcesador2 = new Thread(new ThreadStart(procesador2.ejecutarInstrucciones));
