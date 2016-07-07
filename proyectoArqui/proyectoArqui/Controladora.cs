@@ -368,5 +368,25 @@ namespace proyectoArqui
                 return procesador3.getFinalHilo(idHilo);
             }
         }
+
+        /*Método para obbtener la  memoria compartida */
+        public string getMemCompartida(int idProcesador)
+        {
+            if (idProcesador == 0)
+            {
+                return procesador1.getMemoriaCompartida();
+            }
+            else if (idProcesador == 1)
+            {
+                return procesador2.getMemoriaCompartida();
+            }
+            else
+            {
+                return procesador3.getMemoriaCompartida();
+            }
+        }
+
+
+
     }
 }
